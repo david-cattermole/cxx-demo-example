@@ -30,7 +30,7 @@ done with ThingC
 
 Note: If you are using CentOS 7.8 and require the Red Hat Developer
 Toolset 6 (GCC 6.3.1) for compatiblity with the VFX Reference Platform CY2018,
-then you cause use the following commands prior to running `build_linux.bash`:
+then you can use the following commands prior to running `build_linux.bash`:
 ```
 $ export CC=/opt/rh/devtoolset-6/root/usr/bin/gcc
 $ export CXX=/opt/rh/devtoolset-6/root/usr/bin/g++
