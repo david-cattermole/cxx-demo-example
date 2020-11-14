@@ -68,20 +68,15 @@ This demo targets the C++11 standard.
 
 - Linux
   - GCC 6.3.1
-  - CMake 2.8.12+
-  - Rust 1.47
-    - cbindgen
-    - cxx 0.5.5
-    - libc
-  - cxxbridge-cmd 0.5.5 (installed via Rust's Cargo package manager)
 - Windows 10
   - MSVC - Visual Studio 2015
+- Linux or Windows
   - CMake 2.8.12+
   - Rust 1.47
     - cbindgen
-    - cxx 0.5.5
+    - cxx 0.5.9
     - libc
-  - cxxbridge-cmd 0.5.5 (installed via Rust's Cargo package manager)
+  - cxxbridge-cmd 0.5.9 (installed via Rust's Cargo package manager)
 
 # Project Anatomy
 

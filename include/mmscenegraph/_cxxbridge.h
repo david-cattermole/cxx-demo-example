@@ -6,6 +6,7 @@
 #include <new>
 #include <string>
 #include <type_traits>
+#include <utility>
 
 namespace rust {
 inline namespace cxxbridge05 {
