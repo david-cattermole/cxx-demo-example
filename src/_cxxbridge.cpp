@@ -225,17 +225,17 @@ struct SharedThing final {
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 
 extern "C" {
-__declspec(dllexport) ::mmscenegraph::ThingC *mmscenegraph$cxxbridge1$make_demo(::rust::repr::PtrLen appname) noexcept {
+__attribute__((visibility("default"))) ::mmscenegraph::ThingC *mmscenegraph$cxxbridge1$make_demo(::rust::repr::PtrLen appname) noexcept {
   ::std::unique_ptr<::mmscenegraph::ThingC> (*make_demo$)(::rust::Str) = ::mmscenegraph::make_demo;
   return make_demo$(::rust::impl<::rust::Str>::new_unchecked(appname)).release();
 }
 
-__declspec(dllexport) const ::std::string *mmscenegraph$cxxbridge1$get_name(const ::mmscenegraph::ThingC &thing) noexcept {
+__attribute__((visibility("default"))) const ::std::string *mmscenegraph$cxxbridge1$get_name(const ::mmscenegraph::ThingC &thing) noexcept {
   const ::std::string &(*get_name$)(const ::mmscenegraph::ThingC &) = ::mmscenegraph::get_name;
   return &get_name$(thing);
 }
 
-__declspec(dllexport) void mmscenegraph$cxxbridge1$do_thing(::mmscenegraph::SharedThing *state) noexcept {
+__attribute__((visibility("default"))) void mmscenegraph$cxxbridge1$do_thing(::mmscenegraph::SharedThing *state) noexcept {
   void (*do_thing$)(::mmscenegraph::SharedThing) = ::mmscenegraph::do_thing;
   do_thing$(::std::move(*state));
 }
