@@ -8,7 +8,7 @@
 #include <utility>
 
 namespace rust {
-inline namespace cxxbridge05 {
+inline namespace cxxbridge1 {
 // #include "rust/cxx.h"
 
 namespace {
@@ -16,8 +16,8 @@ template <typename T>
 class impl;
 } // namespace
 
-#ifndef CXXBRIDGE05_RUST_STR
-#define CXXBRIDGE05_RUST_STR
+#ifndef CXXBRIDGE1_RUST_STR
+#define CXXBRIDGE1_RUST_STR
 class Str final {
 public:
   Str() noexcept;
@@ -48,10 +48,10 @@ inline const char *Str::data() const noexcept { return this->ptr; }
 inline size_t Str::size() const noexcept { return this->len; }
 
 inline size_t Str::length() const noexcept { return this->len; }
-#endif // CXXBRIDGE05_RUST_STR
+#endif // CXXBRIDGE1_RUST_STR
 
-#ifndef CXXBRIDGE05_RUST_BOX
-#define CXXBRIDGE05_RUST_BOX
+#ifndef CXXBRIDGE1_RUST_BOX
+#define CXXBRIDGE1_RUST_BOX
 template <typename T>
 class Box final {
 public:
@@ -184,7 +184,7 @@ T *Box<T>::into_raw() noexcept {
 
 template <typename T>
 Box<T>::Box() noexcept {}
-#endif // CXXBRIDGE05_RUST_BOX
+#endif // CXXBRIDGE1_RUST_BOX
 
 namespace {
 namespace repr {
@@ -205,7 +205,7 @@ public:
   }
 };
 } // namespace
-} // namespace cxxbridge05
+} // namespace cxxbridge1
 } // namespace rust
 
 namespace mmscenegraph {
@@ -215,77 +215,77 @@ namespace mmscenegraph {
 }
 
 namespace mmscenegraph {
-#ifndef CXXBRIDGE05_STRUCT_mmscenegraph$SharedThing
-#define CXXBRIDGE05_STRUCT_mmscenegraph$SharedThing
+#ifndef CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
+#define CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 struct SharedThing final {
   int32_t z;
   ::rust::Box<::mmscenegraph::ThingR> y;
   ::std::unique_ptr<::mmscenegraph::ThingC> x;
 };
-#endif // CXXBRIDGE05_STRUCT_mmscenegraph$SharedThing
+#endif // CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 
 extern "C" {
-__attribute__((visibility("default"))) ::mmscenegraph::ThingC *mmscenegraph$cxxbridge05$make_demo(::rust::repr::PtrLen appname) noexcept {
+__declspec(dllexport) ::mmscenegraph::ThingC *mmscenegraph$cxxbridge1$make_demo(::rust::repr::PtrLen appname) noexcept {
   ::std::unique_ptr<::mmscenegraph::ThingC> (*make_demo$)(::rust::Str) = ::mmscenegraph::make_demo;
   return make_demo$(::rust::impl<::rust::Str>::new_unchecked(appname)).release();
 }
 
-__attribute__((visibility("default"))) const ::std::string *mmscenegraph$cxxbridge05$get_name(const ::mmscenegraph::ThingC &thing) noexcept {
+__declspec(dllexport) const ::std::string *mmscenegraph$cxxbridge1$get_name(const ::mmscenegraph::ThingC &thing) noexcept {
   const ::std::string &(*get_name$)(const ::mmscenegraph::ThingC &) = ::mmscenegraph::get_name;
   return &get_name$(thing);
 }
 
-__attribute__((visibility("default"))) void mmscenegraph$cxxbridge05$do_thing(::mmscenegraph::SharedThing *state) noexcept {
+__declspec(dllexport) void mmscenegraph$cxxbridge1$do_thing(::mmscenegraph::SharedThing *state) noexcept {
   void (*do_thing$)(::mmscenegraph::SharedThing) = ::mmscenegraph::do_thing;
   do_thing$(::std::move(*state));
 }
 
-void mmscenegraph$cxxbridge05$print_r(const ::mmscenegraph::ThingR &r) noexcept;
+void mmscenegraph$cxxbridge1$print_r(const ::mmscenegraph::ThingR &r) noexcept;
 } // extern "C"
 
 void print_r(const ::mmscenegraph::ThingR &r) noexcept {
-  mmscenegraph$cxxbridge05$print_r(r);
+  mmscenegraph$cxxbridge1$print_r(r);
 }
 } // namespace mmscenegraph
 
 extern "C" {
-#ifndef CXXBRIDGE05_RUST_BOX_mmscenegraph$ThingR
-#define CXXBRIDGE05_RUST_BOX_mmscenegraph$ThingR
-void cxxbridge05$box$mmscenegraph$ThingR$uninit(::rust::Box<::mmscenegraph::ThingR> *ptr) noexcept;
-void cxxbridge05$box$mmscenegraph$ThingR$drop(::rust::Box<::mmscenegraph::ThingR> *ptr) noexcept;
-#endif // CXXBRIDGE05_RUST_BOX_mmscenegraph$ThingR
+#ifndef CXXBRIDGE1_RUST_BOX_mmscenegraph$ThingR
+#define CXXBRIDGE1_RUST_BOX_mmscenegraph$ThingR
+void cxxbridge1$box$mmscenegraph$ThingR$uninit(::rust::Box<::mmscenegraph::ThingR> *ptr) noexcept;
+void cxxbridge1$box$mmscenegraph$ThingR$drop(::rust::Box<::mmscenegraph::ThingR> *ptr) noexcept;
+#endif // CXXBRIDGE1_RUST_BOX_mmscenegraph$ThingR
 
-#ifndef CXXBRIDGE05_UNIQUE_PTR_mmscenegraph$ThingC
-#define CXXBRIDGE05_UNIQUE_PTR_mmscenegraph$ThingC
+#ifndef CXXBRIDGE1_UNIQUE_PTR_mmscenegraph$ThingC
+#define CXXBRIDGE1_UNIQUE_PTR_mmscenegraph$ThingC
 static_assert(sizeof(::std::unique_ptr<::mmscenegraph::ThingC>) == sizeof(void *), "");
 static_assert(alignof(::std::unique_ptr<::mmscenegraph::ThingC>) == alignof(void *), "");
-void cxxbridge05$unique_ptr$mmscenegraph$ThingC$null(::std::unique_ptr<::mmscenegraph::ThingC> *ptr) noexcept {
+void cxxbridge1$unique_ptr$mmscenegraph$ThingC$null(::std::unique_ptr<::mmscenegraph::ThingC> *ptr) noexcept {
   new (ptr) ::std::unique_ptr<::mmscenegraph::ThingC>();
 }
-void cxxbridge05$unique_ptr$mmscenegraph$ThingC$raw(::std::unique_ptr<::mmscenegraph::ThingC> *ptr, ::mmscenegraph::ThingC *raw) noexcept {
+void cxxbridge1$unique_ptr$mmscenegraph$ThingC$raw(::std::unique_ptr<::mmscenegraph::ThingC> *ptr, ::mmscenegraph::ThingC *raw) noexcept {
   new (ptr) ::std::unique_ptr<::mmscenegraph::ThingC>(raw);
 }
-const ::mmscenegraph::ThingC *cxxbridge05$unique_ptr$mmscenegraph$ThingC$get(const ::std::unique_ptr<::mmscenegraph::ThingC>& ptr) noexcept {
+const ::mmscenegraph::ThingC *cxxbridge1$unique_ptr$mmscenegraph$ThingC$get(const ::std::unique_ptr<::mmscenegraph::ThingC>& ptr) noexcept {
   return ptr.get();
 }
-::mmscenegraph::ThingC *cxxbridge05$unique_ptr$mmscenegraph$ThingC$release(::std::unique_ptr<::mmscenegraph::ThingC>& ptr) noexcept {
+::mmscenegraph::ThingC *cxxbridge1$unique_ptr$mmscenegraph$ThingC$release(::std::unique_ptr<::mmscenegraph::ThingC>& ptr) noexcept {
   return ptr.release();
 }
-void cxxbridge05$unique_ptr$mmscenegraph$ThingC$drop(::std::unique_ptr<::mmscenegraph::ThingC> *ptr) noexcept {
+void cxxbridge1$unique_ptr$mmscenegraph$ThingC$drop(::std::unique_ptr<::mmscenegraph::ThingC> *ptr) noexcept {
   ptr->~unique_ptr();
 }
-#endif // CXXBRIDGE05_UNIQUE_PTR_mmscenegraph$ThingC
+#endif // CXXBRIDGE1_UNIQUE_PTR_mmscenegraph$ThingC
 } // extern "C"
 
 namespace rust {
-inline namespace cxxbridge05 {
+inline namespace cxxbridge1 {
 template <>
 void Box<::mmscenegraph::ThingR>::uninit() noexcept {
-  cxxbridge05$box$mmscenegraph$ThingR$uninit(this);
+  cxxbridge1$box$mmscenegraph$ThingR$uninit(this);
 }
 template <>
 void Box<::mmscenegraph::ThingR>::drop() noexcept {
-  cxxbridge05$box$mmscenegraph$ThingR$drop(this);
+  cxxbridge1$box$mmscenegraph$ThingR$drop(this);
 }
-} // namespace cxxbridge05
+} // namespace cxxbridge1
 } // namespace rust

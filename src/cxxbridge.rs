@@ -6,7 +6,7 @@ mod ffi {
         x: UniquePtr<ThingC>,
     }
 
-    extern "C" {
+    unsafe extern "C++" {
         include!("mmscenegraph/_cpp.h");
         include!("mmscenegraph.h");
 

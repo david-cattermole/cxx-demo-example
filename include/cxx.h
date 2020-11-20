@@ -15,7 +15,7 @@
 #endif
 
 namespace rust {
-inline namespace cxxbridge05 {
+inline namespace cxxbridge1 {
 
 struct unsafe_bitcopy_t;
 
@@ -24,8 +24,8 @@ template <typename T>
 class impl;
 }
 
-#ifndef CXXBRIDGE05_RUST_STRING
-#define CXXBRIDGE05_RUST_STRING
+#ifndef CXXBRIDGE1_RUST_STRING
+#define CXXBRIDGE1_RUST_STRING
 class String final {
 public:
   String() noexcept;
@@ -54,9 +54,9 @@ private:
   // Size and alignment statically verified by rust_string.rs.
   std::array<uintptr_t, 3> repr;
 };
-#endif // CXXBRIDGE05_RUST_STRING
+#endif // CXXBRIDGE1_RUST_STRING
 
-#ifndef CXXBRIDGE05_RUST_STR
+#ifndef CXXBRIDGE1_RUST_STR
 class Str final {
 public:
   Str() noexcept;
@@ -85,18 +85,21 @@ private:
   const char *ptr;
   size_t len;
 };
-#endif // CXXBRIDGE05_RUST_STR
+#endif // CXXBRIDGE1_RUST_STR
 
-#ifndef CXXBRIDGE05_RUST_SLICE
+#ifndef CXXBRIDGE1_RUST_SLICE
 template <typename T>
 class Slice final {
+  static_assert(std::is_const<T>::value,
+                "&[T] needs to be written as rust::Slice<const T> in C++");
+
 public:
   Slice() noexcept;
-  Slice(const T *, size_t count) noexcept;
+  Slice(T *, size_t count) noexcept;
 
   Slice &operator=(const Slice<T> &) noexcept = default;
 
-  const T *data() const noexcept;
+  T *data() const noexcept;
   size_t size() const noexcept;
   size_t length() const noexcept;
 
@@ -108,12 +111,12 @@ private:
   friend impl<Slice>;
   // Not necessarily ABI compatible with &[T]. Codegen will translate to
   // cxx::rust_sliceu8::RustSliceU8 which matches this layout.
-  const T *ptr;
+  T *ptr;
   size_t len;
 };
-#endif // CXXBRIDGE05_RUST_SLICE
+#endif // CXXBRIDGE1_RUST_SLICE
 
-#ifndef CXXBRIDGE05_RUST_BOX
+#ifndef CXXBRIDGE1_RUST_BOX
 template <typename T>
 class Box final {
 public:
@@ -152,9 +155,9 @@ private:
   void drop() noexcept;
   T *ptr;
 };
-#endif // CXXBRIDGE05_RUST_BOX
+#endif // CXXBRIDGE1_RUST_BOX
 
-#ifndef CXXBRIDGE05_RUST_VEC
+#ifndef CXXBRIDGE1_RUST_VEC
 template <typename T>
 class Vec final {
 public:
@@ -180,7 +183,7 @@ public:
   void reserve(size_t new_cap);
   void push_back(const T &value);
   void push_back(T &&value);
-  template <class... Args>
+  template <typename... Args>
   void emplace_back(Args &&... args);
 
   class const_iterator final {
@@ -221,9 +224,9 @@ private:
   // Size and alignment statically verified by rust_vec.rs.
   std::array<uintptr_t, 3> repr;
 };
-#endif // CXXBRIDGE05_RUST_VEC
+#endif // CXXBRIDGE1_RUST_VEC
 
-#ifndef CXXBRIDGE05_RUST_FN
+#ifndef CXXBRIDGE1_RUST_FN
 template <typename Signature, bool Throws = false>
 class Fn;
 
@@ -240,10 +243,10 @@ private:
 
 template <typename Signature>
 using TryFn = Fn<Signature, true>;
-#endif // CXXBRIDGE05_RUST_FN
+#endif // CXXBRIDGE1_RUST_FN
 
-#ifndef CXXBRIDGE05_RUST_ERROR
-#define CXXBRIDGE05_RUST_ERROR
+#ifndef CXXBRIDGE1_RUST_ERROR
+#define CXXBRIDGE1_RUST_ERROR
 class Error final : public std::exception {
 public:
   Error(const Error &);
@@ -261,16 +264,16 @@ private:
   const char *msg;
   size_t len;
 };
-#endif // CXXBRIDGE05_RUST_ERROR
+#endif // CXXBRIDGE1_RUST_ERROR
 
-#ifndef CXXBRIDGE05_RUST_ISIZE
-#define CXXBRIDGE05_RUST_ISIZE
+#ifndef CXXBRIDGE1_RUST_ISIZE
+#define CXXBRIDGE1_RUST_ISIZE
 #if defined(_WIN32)
 using isize = SSIZE_T;
 #else
 using isize = ssize_t;
 #endif
-#endif // CXXBRIDGE05_RUST_ISIZE
+#endif // CXXBRIDGE1_RUST_ISIZE
 
 std::ostream &operator<<(std::ostream &, const String &);
 std::ostream &operator<<(std::ostream &, const Str &);
@@ -299,11 +302,11 @@ struct IsRelocatable;
 // Snake case aliases for use in code that uses this style for type names.
 using string = String;
 using str = Str;
-template <class T>
+template <typename T>
 using slice = Slice<T>;
-template <class T>
+template <typename T>
 using box = Box<T>;
-template <class T>
+template <typename T>
 using vec = Vec<T>;
 using error = Error;
 template <typename Signature, bool Throws = false>
@@ -318,14 +321,14 @@ using is_relocatable = IsRelocatable<T>;
 ////////////////////////////////////////////////////////////////////////////////
 /// end public API, begin implementation details
 
-#ifndef CXXBRIDGE05_PANIC
-#define CXXBRIDGE05_PANIC
+#ifndef CXXBRIDGE1_PANIC
+#define CXXBRIDGE1_PANIC
 template <typename Exception>
 void panic [[noreturn]] (const char *msg);
-#endif // CXXBRIDGE05_PANIC
+#endif // CXXBRIDGE1_PANIC
 
-#ifndef CXXBRIDGE05_RUST_FN
-#define CXXBRIDGE05_RUST_FN
+#ifndef CXXBRIDGE1_RUST_FN
+#define CXXBRIDGE1_RUST_FN
 template <typename Ret, typename... Args, bool Throws>
 Ret Fn<Ret(Args...), Throws>::operator()(Args... args) const noexcept(!Throws) {
   return (*this->trampoline)(std::move(args)..., this->fn);
@@ -335,36 +338,36 @@ template <typename Ret, typename... Args, bool Throws>
 Fn<Ret(Args...), Throws> Fn<Ret(Args...), Throws>::operator*() const noexcept {
   return *this;
 }
-#endif // CXXBRIDGE05_RUST_FN
+#endif // CXXBRIDGE1_RUST_FN
 
-#ifndef CXXBRIDGE05_RUST_BITCOPY
-#define CXXBRIDGE05_RUST_BITCOPY
+#ifndef CXXBRIDGE1_RUST_BITCOPY
+#define CXXBRIDGE1_RUST_BITCOPY
 struct unsafe_bitcopy_t final {
   explicit unsafe_bitcopy_t() = default;
 };
 
 constexpr unsafe_bitcopy_t unsafe_bitcopy{};
-#endif // CXXBRIDGE05_RUST_BITCOPY
+#endif // CXXBRIDGE1_RUST_BITCOPY
 
-#ifndef CXXBRIDGE05_RUST_STR
-#define CXXBRIDGE05_RUST_STR
+#ifndef CXXBRIDGE1_RUST_STR
+#define CXXBRIDGE1_RUST_STR
 inline const char *Str::data() const noexcept { return this->ptr; }
 
 inline size_t Str::size() const noexcept { return this->len; }
 
 inline size_t Str::length() const noexcept { return this->len; }
-#endif // CXXBRIDGE05_RUST_STR
+#endif // CXXBRIDGE1_RUST_STR
 
-#ifndef CXXBRIDGE05_RUST_SLICE
-#define CXXBRIDGE05_RUST_SLICE
+#ifndef CXXBRIDGE1_RUST_SLICE
+#define CXXBRIDGE1_RUST_SLICE
 template <typename T>
-Slice<T>::Slice() noexcept : ptr(reinterpret_cast<const T *>(this)), len(0) {}
-
-template <typename T>
-Slice<T>::Slice(const T *s, size_t count) noexcept : ptr(s), len(count) {}
+Slice<T>::Slice() noexcept : ptr(reinterpret_cast<T *>(this)), len(0) {}
 
 template <typename T>
-const T *Slice<T>::data() const noexcept {
+Slice<T>::Slice(T *s, size_t count) noexcept : ptr(s), len(count) {}
+
+template <typename T>
+T *Slice<T>::data() const noexcept {
   return this->ptr;
 }
 
@@ -377,10 +380,10 @@ template <typename T>
 size_t Slice<T>::length() const noexcept {
   return this->len;
 }
-#endif // CXXBRIDGE05_RUST_SLICE
+#endif // CXXBRIDGE1_RUST_SLICE
 
-#ifndef CXXBRIDGE05_RUST_BOX
-#define CXXBRIDGE05_RUST_BOX
+#ifndef CXXBRIDGE1_RUST_BOX
+#define CXXBRIDGE1_RUST_BOX
 template <typename T>
 Box<T>::Box(const Box &other) : Box(*other) {}
 
@@ -476,10 +479,10 @@ T *Box<T>::into_raw() noexcept {
 
 template <typename T>
 Box<T>::Box() noexcept {}
-#endif // CXXBRIDGE05_RUST_BOX
+#endif // CXXBRIDGE1_RUST_BOX
 
-#ifndef CXXBRIDGE05_RUST_VEC
-#define CXXBRIDGE05_RUST_VEC
+#ifndef CXXBRIDGE1_RUST_VEC
+#define CXXBRIDGE1_RUST_VEC
 template <typename T>
 Vec<T>::Vec(Vec &&other) noexcept {
   this->repr = other.repr;
@@ -615,10 +618,10 @@ typename Vec<T>::const_iterator Vec<T>::end() const noexcept {
 // Internal API only intended for the cxxbridge code generator.
 template <typename T>
 Vec<T>::Vec(unsafe_bitcopy_t, const Vec &bits) noexcept : repr(bits.repr) {}
-#endif // CXXBRIDGE05_RUST_VEC
+#endif // CXXBRIDGE1_RUST_VEC
 
-#ifndef CXXBRIDGE05_RELOCATABLE
-#define CXXBRIDGE05_RELOCATABLE
+#ifndef CXXBRIDGE1_RELOCATABLE
+#define CXXBRIDGE1_RELOCATABLE
 namespace detail {
 template <typename... Ts>
 struct make_void {
@@ -652,7 +655,7 @@ struct IsRelocatable
           std::integral_constant<
               bool, std::is_trivially_move_constructible<T>::value &&
                         std::is_trivially_destructible<T>::value>>::type {};
-#endif // CXXBRIDGE05_RELOCATABLE
+#endif // CXXBRIDGE1_RELOCATABLE
 
-} // namespace cxxbridge05
+} // namespace cxxbridge1
 } // namespace rust

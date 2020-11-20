@@ -9,7 +9,7 @@
 #include <utility>
 
 namespace rust {
-inline namespace cxxbridge05 {
+inline namespace cxxbridge1 {
 // #include "rust/cxx.h"
 
 namespace {
@@ -17,8 +17,8 @@ template <typename T>
 class impl;
 } // namespace
 
-#ifndef CXXBRIDGE05_RUST_STR
-#define CXXBRIDGE05_RUST_STR
+#ifndef CXXBRIDGE1_RUST_STR
+#define CXXBRIDGE1_RUST_STR
 class Str final {
 public:
   Str() noexcept;
@@ -49,10 +49,10 @@ inline const char *Str::data() const noexcept { return this->ptr; }
 inline size_t Str::size() const noexcept { return this->len; }
 
 inline size_t Str::length() const noexcept { return this->len; }
-#endif // CXXBRIDGE05_RUST_STR
+#endif // CXXBRIDGE1_RUST_STR
 
-#ifndef CXXBRIDGE05_RUST_BOX
-#define CXXBRIDGE05_RUST_BOX
+#ifndef CXXBRIDGE1_RUST_BOX
+#define CXXBRIDGE1_RUST_BOX
 template <typename T>
 class Box final {
 public:
@@ -185,8 +185,8 @@ T *Box<T>::into_raw() noexcept {
 
 template <typename T>
 Box<T>::Box() noexcept {}
-#endif // CXXBRIDGE05_RUST_BOX
-} // namespace cxxbridge05
+#endif // CXXBRIDGE1_RUST_BOX
+} // namespace cxxbridge1
 } // namespace rust
 
 namespace mmscenegraph {
@@ -196,14 +196,14 @@ namespace mmscenegraph {
 }
 
 namespace mmscenegraph {
-#ifndef CXXBRIDGE05_STRUCT_mmscenegraph$SharedThing
-#define CXXBRIDGE05_STRUCT_mmscenegraph$SharedThing
+#ifndef CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
+#define CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 struct SharedThing final {
   int32_t z;
   ::rust::Box<::mmscenegraph::ThingR> y;
   ::std::unique_ptr<::mmscenegraph::ThingC> x;
 };
-#endif // CXXBRIDGE05_STRUCT_mmscenegraph$SharedThing
+#endif // CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 
 void print_r(const ::mmscenegraph::ThingR &r) noexcept;
 } // namespace mmscenegraph
