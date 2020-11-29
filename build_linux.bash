@@ -20,15 +20,10 @@ RUST_INCLUDE_DIR="${ROOT}/include/"
 #
 # Assumes 'cxxbridge-cmd' and 'cbindgen' is installed.
 cxxbridge --header --output "${ROOT}/include/cxx.h"
-cxxbridge src/cxxbridge.rs \
-          --header --output "${ROOT}/include/mmscenegraph/_cxxbridge.h"
-cxxbridge src/cxxbridge.rs \
-          --cxx-impl-annotations "__attribute__((visibility(\"default\")))" \
-          --output "${ROOT}/src/_cxxbridge.cpp"
 cbindgen --config cbindgen.toml \
          --crate mmscenegraph \
          --output "${ROOT}/include/mmscenegraph/_cbindgen.h"
-cargo build --release --verbose
+cargo build --release
 
 # Build C++
 mkdir -p build

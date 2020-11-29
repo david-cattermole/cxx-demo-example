@@ -162,6 +162,9 @@ process.
 Files:
 ```
 CMakeLists.txt
+src/CMakeLists.txt
+include/CMakeLists.txt
+tests/CMakeLists.txt
 Cargo.toml
 build_linux.bash
 build_windows64.bat
