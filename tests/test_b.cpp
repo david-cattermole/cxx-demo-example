@@ -18,6 +18,12 @@ int test_b() {
     std::cout << "Read Op Id: " << read_op_id << std::endl;
     std::cout << "Read Op Num: " << read_op_num << std::endl;
 
+    auto write_op = mmsg::new_write_operation(42, 42);
+    auto write_op_id = write_op->get_id();
+    auto write_op_num = write_op->get_num();
+    std::cout << "Write Op Id: " << write_op_id << std::endl;
+    std::cout << "Write Op Num: " << write_op_num << std::endl;
+
     std::cout << "---- Finished Test B!" << std::endl;
     return 0;
 }

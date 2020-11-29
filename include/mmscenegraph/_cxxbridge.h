@@ -211,6 +211,7 @@ namespace mmscenegraph {
   using ThingC = ::mmscenegraph::ThingC;
   struct ThingR;
   struct ReadOperation;
+  struct WriteOperation;
 }
 
 namespace mmscenegraph {
@@ -231,7 +232,17 @@ struct ReadOperation final : public ::rust::Opaque {
 };
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$ReadOperation
 
+#ifndef CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
+#define CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
+struct WriteOperation final : public ::rust::Opaque {
+  uint8_t get_id() const noexcept;
+  size_t get_num() const noexcept;
+};
+#endif // CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
+
 void print_r(const ::mmscenegraph::ThingR &r) noexcept;
 
 ::rust::Box<::mmscenegraph::ReadOperation> new_read_operation(uint8_t id, size_t num) noexcept;
+
+::rust::Box<::mmscenegraph::WriteOperation> new_write_operation(uint8_t id, size_t num) noexcept;
 } // namespace mmscenegraph

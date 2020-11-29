@@ -244,6 +244,7 @@ namespace mmscenegraph {
   using ThingC = ::mmscenegraph::ThingC;
   struct ThingR;
   struct ReadOperation;
+  struct WriteOperation;
 }
 
 namespace mmscenegraph {
@@ -263,6 +264,14 @@ struct ReadOperation final : public ::rust::Opaque {
   size_t get_num() const noexcept;
 };
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$ReadOperation
+
+#ifndef CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
+#define CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
+struct WriteOperation final : public ::rust::Opaque {
+  uint8_t get_id() const noexcept;
+  size_t get_num() const noexcept;
+};
+#endif // CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
 
 extern "C" {
 __declspec(dllexport) ::mmscenegraph::ThingC *mmscenegraph$cxxbridge1$make_demo(::rust::repr::PtrLen appname) noexcept {
@@ -287,6 +296,12 @@ uint8_t mmscenegraph$cxxbridge1$ReadOperation$get_id(const ::mmscenegraph::ReadO
 size_t mmscenegraph$cxxbridge1$ReadOperation$get_num(const ::mmscenegraph::ReadOperation &self) noexcept;
 
 ::mmscenegraph::ReadOperation *mmscenegraph$cxxbridge1$new_read_operation(uint8_t id, size_t num) noexcept;
+
+uint8_t mmscenegraph$cxxbridge1$WriteOperation$get_id(const ::mmscenegraph::WriteOperation &self) noexcept;
+
+size_t mmscenegraph$cxxbridge1$WriteOperation$get_num(const ::mmscenegraph::WriteOperation &self) noexcept;
+
+::mmscenegraph::WriteOperation *mmscenegraph$cxxbridge1$new_write_operation(uint8_t id, size_t num) noexcept;
 } // extern "C"
 
 void print_r(const ::mmscenegraph::ThingR &r) noexcept {
@@ -303,6 +318,18 @@ size_t ReadOperation::get_num() const noexcept {
 
 ::rust::Box<::mmscenegraph::ReadOperation> new_read_operation(uint8_t id, size_t num) noexcept {
   return ::rust::Box<::mmscenegraph::ReadOperation>::from_raw(mmscenegraph$cxxbridge1$new_read_operation(id, num));
+}
+
+uint8_t WriteOperation::get_id() const noexcept {
+  return mmscenegraph$cxxbridge1$WriteOperation$get_id(*this);
+}
+
+size_t WriteOperation::get_num() const noexcept {
+  return mmscenegraph$cxxbridge1$WriteOperation$get_num(*this);
+}
+
+::rust::Box<::mmscenegraph::WriteOperation> new_write_operation(uint8_t id, size_t num) noexcept {
+  return ::rust::Box<::mmscenegraph::WriteOperation>::from_raw(mmscenegraph$cxxbridge1$new_write_operation(id, num));
 }
 } // namespace mmscenegraph
 
@@ -340,6 +367,12 @@ void cxxbridge1$unique_ptr$mmscenegraph$ThingC$drop(::std::unique_ptr<::mmsceneg
 void cxxbridge1$box$mmscenegraph$ReadOperation$uninit(::rust::Box<::mmscenegraph::ReadOperation> *ptr) noexcept;
 void cxxbridge1$box$mmscenegraph$ReadOperation$drop(::rust::Box<::mmscenegraph::ReadOperation> *ptr) noexcept;
 #endif // CXXBRIDGE1_RUST_BOX_mmscenegraph$ReadOperation
+
+#ifndef CXXBRIDGE1_RUST_BOX_mmscenegraph$WriteOperation
+#define CXXBRIDGE1_RUST_BOX_mmscenegraph$WriteOperation
+void cxxbridge1$box$mmscenegraph$WriteOperation$uninit(::rust::Box<::mmscenegraph::WriteOperation> *ptr) noexcept;
+void cxxbridge1$box$mmscenegraph$WriteOperation$drop(::rust::Box<::mmscenegraph::WriteOperation> *ptr) noexcept;
+#endif // CXXBRIDGE1_RUST_BOX_mmscenegraph$WriteOperation
 } // extern "C"
 
 namespace rust {
@@ -359,6 +392,14 @@ void Box<::mmscenegraph::ReadOperation>::uninit() noexcept {
 template <>
 void Box<::mmscenegraph::ReadOperation>::drop() noexcept {
   cxxbridge1$box$mmscenegraph$ReadOperation$drop(this);
+}
+template <>
+void Box<::mmscenegraph::WriteOperation>::uninit() noexcept {
+  cxxbridge1$box$mmscenegraph$WriteOperation$uninit(this);
+}
+template <>
+void Box<::mmscenegraph::WriteOperation>::drop() noexcept {
+  cxxbridge1$box$mmscenegraph$WriteOperation$drop(this);
 }
 } // namespace cxxbridge1
 } // namespace rust
