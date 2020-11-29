@@ -19,10 +19,37 @@ mod ffi {
     extern "Rust" {
         type ThingR;
         fn print_r(r: &ThingR);
+
+        type ReadOperation;
+        fn get_id(self: &ReadOperation) -> u8;
+        fn get_num(self: &ReadOperation) -> usize;
+        fn new_read_operation(id: u8, num: usize) -> Box<ReadOperation>;
     }
 }
 
 pub struct ThingR(usize);
+
+pub struct ReadOperation {
+    id: u8,
+    num: usize,
+}
+
+fn new_read_operation(id: u8, num: usize) -> Box<ReadOperation> {
+    println!("new_read_operation(id={0}, num={1})", id, num);
+    Box::new(ReadOperation { id, num })
+}
+
+impl ReadOperation {
+    fn get_id(&self) -> u8 {
+        println!("ReadOperation.get_id()");
+        self.id
+    }
+
+    fn get_num(&self) -> usize {
+        println!("ReadOperation.get_num()");
+        self.num
+    }
+}
 
 fn print_r(r: &ThingR) {
     println!("called back with r={}", r.0);

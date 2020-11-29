@@ -1,6 +1,7 @@
 #pragma once
 #include "mmscenegraph/_cpp.h"
 #include "mmscenegraph.h"
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <new>
@@ -192,6 +193,16 @@ T *Box<T>::into_raw() noexcept {
 template <typename T>
 Box<T>::Box() noexcept = default;
 #endif // CXXBRIDGE1_RUST_BOX
+
+#ifndef CXXBRIDGE1_RUST_OPAQUE
+#define CXXBRIDGE1_RUST_OPAQUE
+class Opaque {
+public:
+  Opaque() = delete;
+  Opaque(const Opaque &) = delete;
+  ~Opaque() = delete;
+};
+#endif // CXXBRIDGE1_RUST_OPAQUE
 } // namespace cxxbridge1
 } // namespace rust
 
@@ -199,6 +210,7 @@ namespace mmscenegraph {
   struct SharedThing;
   using ThingC = ::mmscenegraph::ThingC;
   struct ThingR;
+  struct ReadOperation;
 }
 
 namespace mmscenegraph {
@@ -211,5 +223,15 @@ struct SharedThing final {
 };
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 
+#ifndef CXXBRIDGE1_STRUCT_mmscenegraph$ReadOperation
+#define CXXBRIDGE1_STRUCT_mmscenegraph$ReadOperation
+struct ReadOperation final : public ::rust::Opaque {
+  uint8_t get_id() const noexcept;
+  size_t get_num() const noexcept;
+};
+#endif // CXXBRIDGE1_STRUCT_mmscenegraph$ReadOperation
+
 void print_r(const ::mmscenegraph::ThingR &r) noexcept;
+
+::rust::Box<::mmscenegraph::ReadOperation> new_read_operation(uint8_t id, size_t num) noexcept;
 } // namespace mmscenegraph
