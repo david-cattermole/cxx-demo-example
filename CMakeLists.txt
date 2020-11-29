@@ -14,7 +14,7 @@ set(PROJECT_COPYRIGHT "2020, David Cattermole.")
 
 # Static build information.
 set(target_lib "mmscenegraph")
-set(target_test_exe "mmscengraph_tests")
+set(target_test_exe "mmscenegraph_tests")
 
 set(target_release_lib_name "mmscenegraph")
 set(target_test_exe_name "mmscenegraph_tests")
