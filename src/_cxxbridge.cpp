@@ -24,7 +24,6 @@ public:
   Str(const std::string &);
   Str(const char *);
   Str(const char *, size_t);
-  Str(std::string &&) = delete;
 
   Str &operator=(const Str &) noexcept = default;
 
@@ -36,6 +35,13 @@ public:
 
   Str(const Str &) noexcept = default;
   ~Str() noexcept = default;
+
+  using iterator = const char *;
+  using const_iterator = const char *;
+  const_iterator begin() const noexcept;
+  const_iterator end() const noexcept;
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
 
 private:
   friend impl<Str>;
@@ -183,13 +189,13 @@ T *Box<T>::into_raw() noexcept {
 }
 
 template <typename T>
-Box<T>::Box() noexcept {}
+Box<T>::Box() noexcept = default;
 #endif // CXXBRIDGE1_RUST_BOX
 
 namespace {
 namespace repr {
 struct PtrLen final {
-  const void *ptr;
+  void *ptr;
   size_t len;
 };
 } // namespace repr
@@ -203,6 +209,20 @@ public:
     str.len = repr.len;
     return str;
   }
+};
+
+template <typename T, typename = size_t>
+struct is_complete : std::false_type {};
+
+template <typename T>
+struct is_complete<T, decltype(sizeof(T))> : std::true_type {};
+
+template <bool> struct deleter_if {
+  template <typename T> void operator()(T *) {}
+};
+
+template <> struct deleter_if<true> {
+  template <typename T> void operator()(T *ptr) { ptr->~T(); }
 };
 } // namespace
 } // namespace cxxbridge1
@@ -225,17 +245,17 @@ struct SharedThing final {
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 
 extern "C" {
-__attribute__((visibility("default"))) ::mmscenegraph::ThingC *mmscenegraph$cxxbridge1$make_demo(::rust::repr::PtrLen appname) noexcept {
+__declspec(dllexport) ::mmscenegraph::ThingC *mmscenegraph$cxxbridge1$make_demo(::rust::repr::PtrLen appname) noexcept {
   ::std::unique_ptr<::mmscenegraph::ThingC> (*make_demo$)(::rust::Str) = ::mmscenegraph::make_demo;
   return make_demo$(::rust::impl<::rust::Str>::new_unchecked(appname)).release();
 }
 
-__attribute__((visibility("default"))) const ::std::string *mmscenegraph$cxxbridge1$get_name(const ::mmscenegraph::ThingC &thing) noexcept {
+__declspec(dllexport) const ::std::string *mmscenegraph$cxxbridge1$get_name(const ::mmscenegraph::ThingC &thing) noexcept {
   const ::std::string &(*get_name$)(const ::mmscenegraph::ThingC &) = ::mmscenegraph::get_name;
   return &get_name$(thing);
 }
 
-__attribute__((visibility("default"))) void mmscenegraph$cxxbridge1$do_thing(::mmscenegraph::SharedThing *state) noexcept {
+__declspec(dllexport) void mmscenegraph$cxxbridge1$do_thing(::mmscenegraph::SharedThing *state) noexcept {
   void (*do_thing$)(::mmscenegraph::SharedThing) = ::mmscenegraph::do_thing;
   do_thing$(::std::move(*state));
 }
@@ -257,6 +277,7 @@ void cxxbridge1$box$mmscenegraph$ThingR$drop(::rust::Box<::mmscenegraph::ThingR>
 
 #ifndef CXXBRIDGE1_UNIQUE_PTR_mmscenegraph$ThingC
 #define CXXBRIDGE1_UNIQUE_PTR_mmscenegraph$ThingC
+static_assert(::rust::is_complete<::mmscenegraph::ThingC>::value, "definition of ThingC is required");
 static_assert(sizeof(::std::unique_ptr<::mmscenegraph::ThingC>) == sizeof(void *), "");
 static_assert(alignof(::std::unique_ptr<::mmscenegraph::ThingC>) == alignof(void *), "");
 void cxxbridge1$unique_ptr$mmscenegraph$ThingC$null(::std::unique_ptr<::mmscenegraph::ThingC> *ptr) noexcept {
@@ -272,7 +293,7 @@ const ::mmscenegraph::ThingC *cxxbridge1$unique_ptr$mmscenegraph$ThingC$get(cons
   return ptr.release();
 }
 void cxxbridge1$unique_ptr$mmscenegraph$ThingC$drop(::std::unique_ptr<::mmscenegraph::ThingC> *ptr) noexcept {
-  ptr->~unique_ptr();
+  ::rust::deleter_if<::rust::is_complete<::mmscenegraph::ThingC>::value>{}(ptr);
 }
 #endif // CXXBRIDGE1_UNIQUE_PTR_mmscenegraph$ThingC
 } // extern "C"
