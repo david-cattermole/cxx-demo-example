@@ -231,6 +231,8 @@ struct SharedThing final {
   int32_t z;
   ::rust::Box<::mmscenegraph::ThingR> y;
   ::std::unique_ptr<::mmscenegraph::ThingC> x;
+
+  using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 

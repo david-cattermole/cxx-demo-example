@@ -264,6 +264,8 @@ struct SharedThing final {
   int32_t z;
   ::rust::Box<::mmscenegraph::ThingR> y;
   ::std::unique_ptr<::mmscenegraph::ThingC> x;
+
+  using IsRelocatable = ::std::true_type;
 };
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 
@@ -284,17 +286,17 @@ struct WriteOperation final : public ::rust::Opaque {
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
 
 extern "C" {
-__attribute__((visibility("default"))) ::mmscenegraph::ThingC *mmscenegraph$cxxbridge1$make_demo(::rust::repr::PtrLen appname) noexcept {
+__declspec(dllexport) ::mmscenegraph::ThingC *mmscenegraph$cxxbridge1$make_demo(::rust::repr::PtrLen appname) noexcept {
   ::std::unique_ptr<::mmscenegraph::ThingC> (*make_demo$)(::rust::Str) = ::mmscenegraph::make_demo;
   return make_demo$(::rust::impl<::rust::Str>::new_unchecked(appname)).release();
 }
 
-__attribute__((visibility("default"))) const ::std::string *mmscenegraph$cxxbridge1$get_name(const ::mmscenegraph::ThingC &thing) noexcept {
+__declspec(dllexport) const ::std::string *mmscenegraph$cxxbridge1$get_name(const ::mmscenegraph::ThingC &thing) noexcept {
   const ::std::string &(*get_name$)(const ::mmscenegraph::ThingC &) = ::mmscenegraph::get_name;
   return &get_name$(thing);
 }
 
-__attribute__((visibility("default"))) void mmscenegraph$cxxbridge1$do_thing(::mmscenegraph::SharedThing *state) noexcept {
+__declspec(dllexport) void mmscenegraph$cxxbridge1$do_thing(::mmscenegraph::SharedThing *state) noexcept {
   void (*do_thing$)(::mmscenegraph::SharedThing) = ::mmscenegraph::do_thing;
   do_thing$(::std::move(*state));
 }
@@ -356,10 +358,10 @@ static_assert(::rust::is_complete<::mmscenegraph::ThingC>::value, "definition of
 static_assert(sizeof(::std::unique_ptr<::mmscenegraph::ThingC>) == sizeof(void *), "");
 static_assert(alignof(::std::unique_ptr<::mmscenegraph::ThingC>) == alignof(void *), "");
 void cxxbridge1$unique_ptr$mmscenegraph$ThingC$null(::std::unique_ptr<::mmscenegraph::ThingC> *ptr) noexcept {
-  new (ptr) ::std::unique_ptr<::mmscenegraph::ThingC>();
+  ::new (ptr) ::std::unique_ptr<::mmscenegraph::ThingC>();
 }
 void cxxbridge1$unique_ptr$mmscenegraph$ThingC$raw(::std::unique_ptr<::mmscenegraph::ThingC> *ptr, ::mmscenegraph::ThingC *raw) noexcept {
-  new (ptr) ::std::unique_ptr<::mmscenegraph::ThingC>(raw);
+  ::new (ptr) ::std::unique_ptr<::mmscenegraph::ThingC>(raw);
 }
 const ::mmscenegraph::ThingC *cxxbridge1$unique_ptr$mmscenegraph$ThingC$get(const ::std::unique_ptr<::mmscenegraph::ThingC>& ptr) noexcept {
   return ptr.get();
