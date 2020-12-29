@@ -1,4 +1,7 @@
-#pragma once
+#ifndef MMSCENEGRAPH_CBINDGEN_H
+#define MMSCENEGRAPH_CBINDGEN_H
+
+/* Generated with cbindgen:0.16.0 */
 
 #include <cstdarg>
 #include <cstdint>
@@ -23,3 +26,5 @@ MMSCENEGRAPH_SYMBOL_EXPORT void scene_graph_delete(SceneGraph *scene_graph_ptr);
 } // extern "C"
 
 } // namespace mmscenegraph
+
+#endif // MMSCENEGRAPH_CBINDGEN_H
