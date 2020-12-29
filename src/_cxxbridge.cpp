@@ -27,15 +27,15 @@ public:
   Str(const String &) noexcept;
   Str(const std::string &);
   Str(const char *);
-  Str(const char *, size_t);
+  Str(const char *, std::size_t);
 
   Str &operator=(const Str &) noexcept = default;
 
   explicit operator std::string() const;
 
   const char *data() const noexcept;
-  size_t size() const noexcept;
-  size_t length() const noexcept;
+  std::size_t size() const noexcept;
+  std::size_t length() const noexcept;
 
   Str(const Str &) noexcept = default;
   ~Str() noexcept = default;
@@ -57,14 +57,14 @@ public:
 private:
   friend impl<Str>;
   const char *ptr;
-  size_t len;
+  std::size_t len;
 };
 
 inline const char *Str::data() const noexcept { return this->ptr; }
 
-inline size_t Str::size() const noexcept { return this->len; }
+inline std::size_t Str::size() const noexcept { return this->len; }
 
-inline size_t Str::length() const noexcept { return this->len; }
+inline std::size_t Str::length() const noexcept { return this->len; }
 #endif // CXXBRIDGE1_RUST_STR
 
 #ifndef CXXBRIDGE1_RUST_BOX
@@ -72,11 +72,12 @@ inline size_t Str::length() const noexcept { return this->len; }
 template <typename T>
 class Box final {
 public:
-  using value_type = T;
+  using element_type = T;
   using const_pointer =
       typename std::add_pointer<typename std::add_const<T>::type>::type;
   using pointer = typename std::add_pointer<T>::type;
 
+  Box() = delete;
   Box(const Box &);
   Box(Box &&) noexcept;
   ~Box() noexcept;
@@ -99,10 +100,31 @@ public:
 
   T *into_raw() noexcept;
 
+  /* Deprecated */ using value_type = element_type;
+
 private:
-  Box() noexcept;
-  void uninit() noexcept;
+  class uninit;
+  class allocation;
+  Box(uninit) noexcept;
   void drop() noexcept;
+  T *ptr;
+};
+
+template <typename T>
+class Box<T>::uninit {};
+
+template <typename T>
+class Box<T>::allocation {
+  static T *alloc() noexcept;
+  static void dealloc(T *) noexcept;
+
+public:
+  allocation() noexcept : ptr(alloc()) {}
+  ~allocation() noexcept {
+    if (this->ptr) {
+      dealloc(this->ptr);
+    }
+  }
   T *ptr;
 };
 
@@ -116,14 +138,18 @@ Box<T>::Box(Box &&other) noexcept : ptr(other.ptr) {
 
 template <typename T>
 Box<T>::Box(const T &val) {
-  this->uninit();
-  ::new (this->ptr) T(val);
+  allocation alloc;
+  ::new (alloc.ptr) T(val);
+  this->ptr = alloc.ptr;
+  alloc.ptr = nullptr;
 }
 
 template <typename T>
 Box<T>::Box(T &&val) {
-  this->uninit();
-  ::new (this->ptr) T(std::move(val));
+  allocation alloc;
+  ::new (alloc.ptr) T(std::move(val));
+  this->ptr = alloc.ptr;
+  alloc.ptr = nullptr;
 }
 
 template <typename T>
@@ -135,13 +161,13 @@ Box<T>::~Box() noexcept {
 
 template <typename T>
 Box<T> &Box<T>::operator=(const Box &other) {
-  if (this != &other) {
-    if (this->ptr) {
-      **this = *other;
-    } else {
-      this->uninit();
-      ::new (this->ptr) T(*other);
-    }
+  if (this->ptr) {
+    **this = *other;
+  } else {
+    allocation alloc;
+    ::new (alloc.ptr) T(*other);
+    this->ptr = alloc.ptr;
+    alloc.ptr = nullptr;
   }
   return *this;
 }
@@ -179,15 +205,16 @@ T &Box<T>::operator*() noexcept {
 template <typename T>
 template <typename... Fields>
 Box<T> Box<T>::in_place(Fields &&... fields) {
-  Box box;
-  box.uninit();
-  ::new (box.ptr) T{std::forward<Fields>(fields)...};
-  return box;
+  allocation alloc;
+  auto ptr = alloc.ptr;
+  ::new (ptr) T{std::forward<Fields>(fields)...};
+  alloc.ptr = nullptr;
+  return from_raw(ptr);
 }
 
 template <typename T>
 Box<T> Box<T>::from_raw(T *raw) noexcept {
-  Box box;
+  Box box = uninit{};
   box.ptr = raw;
   return box;
 }
@@ -200,7 +227,7 @@ T *Box<T>::into_raw() noexcept {
 }
 
 template <typename T>
-Box<T>::Box() noexcept = default;
+Box<T>::Box(uninit) noexcept {}
 #endif // CXXBRIDGE1_RUST_BOX
 
 #ifndef CXXBRIDGE1_RUST_OPAQUE
@@ -213,11 +240,79 @@ public:
 };
 #endif // CXXBRIDGE1_RUST_OPAQUE
 
+#ifndef CXXBRIDGE1_IS_COMPLETE
+#define CXXBRIDGE1_IS_COMPLETE
+namespace detail {
+namespace {
+template <typename T, typename = std::size_t>
+struct is_complete : std::false_type {};
+template <typename T>
+struct is_complete<T, decltype(sizeof(T))> : std::true_type {};
+} // namespace
+} // namespace detail
+#endif // CXXBRIDGE1_IS_COMPLETE
+
+#ifndef CXXBRIDGE1_LAYOUT
+#define CXXBRIDGE1_LAYOUT
+class layout {
+  template <typename T>
+  friend std::size_t size_of();
+  template <typename T>
+  friend std::size_t align_of();
+  template <typename T>
+  static typename std::enable_if<std::is_base_of<Opaque, T>::value,
+                                 std::size_t>::type
+  do_size_of() {
+    return T::layout::size();
+  }
+  template <typename T>
+  static typename std::enable_if<!std::is_base_of<Opaque, T>::value,
+                                 std::size_t>::type
+  do_size_of() {
+    return sizeof(T);
+  }
+  template <typename T>
+  static
+      typename std::enable_if<detail::is_complete<T>::value, std::size_t>::type
+      size_of() {
+    return do_size_of<T>();
+  }
+  template <typename T>
+  static typename std::enable_if<std::is_base_of<Opaque, T>::value,
+                                 std::size_t>::type
+  do_align_of() {
+    return T::layout::align();
+  }
+  template <typename T>
+  static typename std::enable_if<!std::is_base_of<Opaque, T>::value,
+                                 std::size_t>::type
+  do_align_of() {
+    return alignof(T);
+  }
+  template <typename T>
+  static
+      typename std::enable_if<detail::is_complete<T>::value, std::size_t>::type
+      align_of() {
+    return do_align_of<T>();
+  }
+};
+
+template <typename T>
+std::size_t size_of() {
+  return layout::size_of<T>();
+}
+
+template <typename T>
+std::size_t align_of() {
+  return layout::align_of<T>();
+}
+#endif // CXXBRIDGE1_LAYOUT
+
 namespace {
 namespace repr {
 struct PtrLen final {
   void *ptr;
-  size_t len;
+  ::std::size_t len;
 };
 } // namespace repr
 
@@ -231,12 +326,6 @@ public:
     return str;
   }
 };
-
-template <typename T, typename = size_t>
-struct is_complete : std::false_type {};
-
-template <typename T>
-struct is_complete<T, decltype(sizeof(T))> : std::true_type {};
 
 template <bool> struct deleter_if {
   template <typename T> void operator()(T *) {}
@@ -261,7 +350,7 @@ namespace mmscenegraph {
 #ifndef CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 #define CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 struct SharedThing final {
-  int32_t z;
+  ::std::int32_t z;
   ::rust::Box<::mmscenegraph::ThingR> y;
   ::std::unique_ptr<::mmscenegraph::ThingC> x;
 
@@ -269,19 +358,45 @@ struct SharedThing final {
 };
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 
+#ifndef CXXBRIDGE1_STRUCT_mmscenegraph$ThingR
+#define CXXBRIDGE1_STRUCT_mmscenegraph$ThingR
+struct ThingR final : public ::rust::Opaque {
+private:
+  friend ::rust::layout;
+  struct layout {
+    static ::std::size_t size() noexcept;
+    static ::std::size_t align() noexcept;
+  };
+};
+#endif // CXXBRIDGE1_STRUCT_mmscenegraph$ThingR
+
 #ifndef CXXBRIDGE1_STRUCT_mmscenegraph$ReadOperation
 #define CXXBRIDGE1_STRUCT_mmscenegraph$ReadOperation
 struct ReadOperation final : public ::rust::Opaque {
-  uint8_t get_id() const noexcept;
-  size_t get_num() const noexcept;
+  ::std::uint8_t get_id() const noexcept;
+  ::std::size_t get_num() const noexcept;
+
+private:
+  friend ::rust::layout;
+  struct layout {
+    static ::std::size_t size() noexcept;
+    static ::std::size_t align() noexcept;
+  };
 };
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$ReadOperation
 
 #ifndef CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
 #define CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
 struct WriteOperation final : public ::rust::Opaque {
-  uint8_t get_id() const noexcept;
-  size_t get_num() const noexcept;
+  ::std::uint8_t get_id() const noexcept;
+  ::std::size_t get_num() const noexcept;
+
+private:
+  friend ::rust::layout;
+  struct layout {
+    static ::std::size_t size() noexcept;
+    static ::std::size_t align() noexcept;
+  };
 };
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
 
@@ -300,61 +415,87 @@ __declspec(dllexport) void mmscenegraph$cxxbridge1$do_thing(::mmscenegraph::Shar
   void (*do_thing$)(::mmscenegraph::SharedThing) = ::mmscenegraph::do_thing;
   do_thing$(::std::move(*state));
 }
+::std::size_t mmscenegraph$cxxbridge1$ThingR$operator$sizeof() noexcept;
+::std::size_t mmscenegraph$cxxbridge1$ThingR$operator$alignof() noexcept;
 
 void mmscenegraph$cxxbridge1$print_r(const ::mmscenegraph::ThingR &r) noexcept;
+::std::size_t mmscenegraph$cxxbridge1$ReadOperation$operator$sizeof() noexcept;
+::std::size_t mmscenegraph$cxxbridge1$ReadOperation$operator$alignof() noexcept;
 
-uint8_t mmscenegraph$cxxbridge1$ReadOperation$get_id(const ::mmscenegraph::ReadOperation &self) noexcept;
+::std::uint8_t mmscenegraph$cxxbridge1$ReadOperation$get_id(const ::mmscenegraph::ReadOperation &self) noexcept;
 
-size_t mmscenegraph$cxxbridge1$ReadOperation$get_num(const ::mmscenegraph::ReadOperation &self) noexcept;
+::std::size_t mmscenegraph$cxxbridge1$ReadOperation$get_num(const ::mmscenegraph::ReadOperation &self) noexcept;
 
-::mmscenegraph::ReadOperation *mmscenegraph$cxxbridge1$new_read_operation(uint8_t id, size_t num) noexcept;
+::mmscenegraph::ReadOperation *mmscenegraph$cxxbridge1$new_read_operation(::std::uint8_t id, ::std::size_t num) noexcept;
+::std::size_t mmscenegraph$cxxbridge1$WriteOperation$operator$sizeof() noexcept;
+::std::size_t mmscenegraph$cxxbridge1$WriteOperation$operator$alignof() noexcept;
 
-uint8_t mmscenegraph$cxxbridge1$WriteOperation$get_id(const ::mmscenegraph::WriteOperation &self) noexcept;
+::std::uint8_t mmscenegraph$cxxbridge1$WriteOperation$get_id(const ::mmscenegraph::WriteOperation &self) noexcept;
 
-size_t mmscenegraph$cxxbridge1$WriteOperation$get_num(const ::mmscenegraph::WriteOperation &self) noexcept;
+::std::size_t mmscenegraph$cxxbridge1$WriteOperation$get_num(const ::mmscenegraph::WriteOperation &self) noexcept;
 
-::mmscenegraph::WriteOperation *mmscenegraph$cxxbridge1$new_write_operation(uint8_t id, size_t num) noexcept;
+::mmscenegraph::WriteOperation *mmscenegraph$cxxbridge1$new_write_operation(::std::uint8_t id, ::std::size_t num) noexcept;
 } // extern "C"
+
+::std::size_t ThingR::layout::size() noexcept {
+  return mmscenegraph$cxxbridge1$ThingR$operator$sizeof();
+}
+
+::std::size_t ThingR::layout::align() noexcept {
+  return mmscenegraph$cxxbridge1$ThingR$operator$alignof();
+}
 
 void print_r(const ::mmscenegraph::ThingR &r) noexcept {
   mmscenegraph$cxxbridge1$print_r(r);
 }
 
-uint8_t ReadOperation::get_id() const noexcept {
+::std::size_t ReadOperation::layout::size() noexcept {
+  return mmscenegraph$cxxbridge1$ReadOperation$operator$sizeof();
+}
+
+::std::size_t ReadOperation::layout::align() noexcept {
+  return mmscenegraph$cxxbridge1$ReadOperation$operator$alignof();
+}
+
+::std::uint8_t ReadOperation::get_id() const noexcept {
   return mmscenegraph$cxxbridge1$ReadOperation$get_id(*this);
 }
 
-size_t ReadOperation::get_num() const noexcept {
+::std::size_t ReadOperation::get_num() const noexcept {
   return mmscenegraph$cxxbridge1$ReadOperation$get_num(*this);
 }
 
-::rust::Box<::mmscenegraph::ReadOperation> new_read_operation(uint8_t id, size_t num) noexcept {
+::rust::Box<::mmscenegraph::ReadOperation> new_read_operation(::std::uint8_t id, ::std::size_t num) noexcept {
   return ::rust::Box<::mmscenegraph::ReadOperation>::from_raw(mmscenegraph$cxxbridge1$new_read_operation(id, num));
 }
 
-uint8_t WriteOperation::get_id() const noexcept {
+::std::size_t WriteOperation::layout::size() noexcept {
+  return mmscenegraph$cxxbridge1$WriteOperation$operator$sizeof();
+}
+
+::std::size_t WriteOperation::layout::align() noexcept {
+  return mmscenegraph$cxxbridge1$WriteOperation$operator$alignof();
+}
+
+::std::uint8_t WriteOperation::get_id() const noexcept {
   return mmscenegraph$cxxbridge1$WriteOperation$get_id(*this);
 }
 
-size_t WriteOperation::get_num() const noexcept {
+::std::size_t WriteOperation::get_num() const noexcept {
   return mmscenegraph$cxxbridge1$WriteOperation$get_num(*this);
 }
 
-::rust::Box<::mmscenegraph::WriteOperation> new_write_operation(uint8_t id, size_t num) noexcept {
+::rust::Box<::mmscenegraph::WriteOperation> new_write_operation(::std::uint8_t id, ::std::size_t num) noexcept {
   return ::rust::Box<::mmscenegraph::WriteOperation>::from_raw(mmscenegraph$cxxbridge1$new_write_operation(id, num));
 }
 } // namespace mmscenegraph
 
 extern "C" {
-#ifndef CXXBRIDGE1_RUST_BOX_mmscenegraph$ThingR
-#define CXXBRIDGE1_RUST_BOX_mmscenegraph$ThingR
-void cxxbridge1$box$mmscenegraph$ThingR$uninit(::rust::Box<::mmscenegraph::ThingR> *ptr) noexcept;
+::mmscenegraph::ThingR *cxxbridge1$box$mmscenegraph$ThingR$alloc() noexcept;
+void cxxbridge1$box$mmscenegraph$ThingR$dealloc(::mmscenegraph::ThingR *) noexcept;
 void cxxbridge1$box$mmscenegraph$ThingR$drop(::rust::Box<::mmscenegraph::ThingR> *ptr) noexcept;
-#endif // CXXBRIDGE1_RUST_BOX_mmscenegraph$ThingR
 
-#ifndef CXXBRIDGE1_UNIQUE_PTR_mmscenegraph$ThingC
-#define CXXBRIDGE1_UNIQUE_PTR_mmscenegraph$ThingC
-static_assert(::rust::is_complete<::mmscenegraph::ThingC>::value, "definition of ThingC is required");
+static_assert(::rust::detail::is_complete<::mmscenegraph::ThingC>::value, "definition of ThingC is required");
 static_assert(sizeof(::std::unique_ptr<::mmscenegraph::ThingC>) == sizeof(void *), "");
 static_assert(alignof(::std::unique_ptr<::mmscenegraph::ThingC>) == alignof(void *), "");
 void cxxbridge1$unique_ptr$mmscenegraph$ThingC$null(::std::unique_ptr<::mmscenegraph::ThingC> *ptr) noexcept {
@@ -370,44 +511,51 @@ const ::mmscenegraph::ThingC *cxxbridge1$unique_ptr$mmscenegraph$ThingC$get(cons
   return ptr.release();
 }
 void cxxbridge1$unique_ptr$mmscenegraph$ThingC$drop(::std::unique_ptr<::mmscenegraph::ThingC> *ptr) noexcept {
-  ::rust::deleter_if<::rust::is_complete<::mmscenegraph::ThingC>::value>{}(ptr);
+  ::rust::deleter_if<::rust::detail::is_complete<::mmscenegraph::ThingC>::value>{}(ptr);
 }
-#endif // CXXBRIDGE1_UNIQUE_PTR_mmscenegraph$ThingC
 
-#ifndef CXXBRIDGE1_RUST_BOX_mmscenegraph$ReadOperation
-#define CXXBRIDGE1_RUST_BOX_mmscenegraph$ReadOperation
-void cxxbridge1$box$mmscenegraph$ReadOperation$uninit(::rust::Box<::mmscenegraph::ReadOperation> *ptr) noexcept;
+::mmscenegraph::ReadOperation *cxxbridge1$box$mmscenegraph$ReadOperation$alloc() noexcept;
+void cxxbridge1$box$mmscenegraph$ReadOperation$dealloc(::mmscenegraph::ReadOperation *) noexcept;
 void cxxbridge1$box$mmscenegraph$ReadOperation$drop(::rust::Box<::mmscenegraph::ReadOperation> *ptr) noexcept;
-#endif // CXXBRIDGE1_RUST_BOX_mmscenegraph$ReadOperation
 
-#ifndef CXXBRIDGE1_RUST_BOX_mmscenegraph$WriteOperation
-#define CXXBRIDGE1_RUST_BOX_mmscenegraph$WriteOperation
-void cxxbridge1$box$mmscenegraph$WriteOperation$uninit(::rust::Box<::mmscenegraph::WriteOperation> *ptr) noexcept;
+::mmscenegraph::WriteOperation *cxxbridge1$box$mmscenegraph$WriteOperation$alloc() noexcept;
+void cxxbridge1$box$mmscenegraph$WriteOperation$dealloc(::mmscenegraph::WriteOperation *) noexcept;
 void cxxbridge1$box$mmscenegraph$WriteOperation$drop(::rust::Box<::mmscenegraph::WriteOperation> *ptr) noexcept;
-#endif // CXXBRIDGE1_RUST_BOX_mmscenegraph$WriteOperation
 } // extern "C"
 
 namespace rust {
 inline namespace cxxbridge1 {
 template <>
-void Box<::mmscenegraph::ThingR>::uninit() noexcept {
-  cxxbridge1$box$mmscenegraph$ThingR$uninit(this);
+::mmscenegraph::ThingR *Box<::mmscenegraph::ThingR>::allocation::alloc() noexcept {
+  return cxxbridge1$box$mmscenegraph$ThingR$alloc();
+}
+template <>
+void Box<::mmscenegraph::ThingR>::allocation::dealloc(::mmscenegraph::ThingR *ptr) noexcept {
+  cxxbridge1$box$mmscenegraph$ThingR$dealloc(ptr);
 }
 template <>
 void Box<::mmscenegraph::ThingR>::drop() noexcept {
   cxxbridge1$box$mmscenegraph$ThingR$drop(this);
 }
 template <>
-void Box<::mmscenegraph::ReadOperation>::uninit() noexcept {
-  cxxbridge1$box$mmscenegraph$ReadOperation$uninit(this);
+::mmscenegraph::ReadOperation *Box<::mmscenegraph::ReadOperation>::allocation::alloc() noexcept {
+  return cxxbridge1$box$mmscenegraph$ReadOperation$alloc();
+}
+template <>
+void Box<::mmscenegraph::ReadOperation>::allocation::dealloc(::mmscenegraph::ReadOperation *ptr) noexcept {
+  cxxbridge1$box$mmscenegraph$ReadOperation$dealloc(ptr);
 }
 template <>
 void Box<::mmscenegraph::ReadOperation>::drop() noexcept {
   cxxbridge1$box$mmscenegraph$ReadOperation$drop(this);
 }
 template <>
-void Box<::mmscenegraph::WriteOperation>::uninit() noexcept {
-  cxxbridge1$box$mmscenegraph$WriteOperation$uninit(this);
+::mmscenegraph::WriteOperation *Box<::mmscenegraph::WriteOperation>::allocation::alloc() noexcept {
+  return cxxbridge1$box$mmscenegraph$WriteOperation$alloc();
+}
+template <>
+void Box<::mmscenegraph::WriteOperation>::allocation::dealloc(::mmscenegraph::WriteOperation *ptr) noexcept {
+  cxxbridge1$box$mmscenegraph$WriteOperation$dealloc(ptr);
 }
 template <>
 void Box<::mmscenegraph::WriteOperation>::drop() noexcept {

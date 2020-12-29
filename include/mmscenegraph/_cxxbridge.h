@@ -28,15 +28,15 @@ public:
   Str(const String &) noexcept;
   Str(const std::string &);
   Str(const char *);
-  Str(const char *, size_t);
+  Str(const char *, std::size_t);
 
   Str &operator=(const Str &) noexcept = default;
 
   explicit operator std::string() const;
 
   const char *data() const noexcept;
-  size_t size() const noexcept;
-  size_t length() const noexcept;
+  std::size_t size() const noexcept;
+  std::size_t length() const noexcept;
 
   Str(const Str &) noexcept = default;
   ~Str() noexcept = default;
@@ -58,14 +58,14 @@ public:
 private:
   friend impl<Str>;
   const char *ptr;
-  size_t len;
+  std::size_t len;
 };
 
 inline const char *Str::data() const noexcept { return this->ptr; }
 
-inline size_t Str::size() const noexcept { return this->len; }
+inline std::size_t Str::size() const noexcept { return this->len; }
 
-inline size_t Str::length() const noexcept { return this->len; }
+inline std::size_t Str::length() const noexcept { return this->len; }
 #endif // CXXBRIDGE1_RUST_STR
 
 #ifndef CXXBRIDGE1_RUST_BOX
@@ -73,11 +73,12 @@ inline size_t Str::length() const noexcept { return this->len; }
 template <typename T>
 class Box final {
 public:
-  using value_type = T;
+  using element_type = T;
   using const_pointer =
       typename std::add_pointer<typename std::add_const<T>::type>::type;
   using pointer = typename std::add_pointer<T>::type;
 
+  Box() = delete;
   Box(const Box &);
   Box(Box &&) noexcept;
   ~Box() noexcept;
@@ -100,10 +101,31 @@ public:
 
   T *into_raw() noexcept;
 
+  /* Deprecated */ using value_type = element_type;
+
 private:
-  Box() noexcept;
-  void uninit() noexcept;
+  class uninit;
+  class allocation;
+  Box(uninit) noexcept;
   void drop() noexcept;
+  T *ptr;
+};
+
+template <typename T>
+class Box<T>::uninit {};
+
+template <typename T>
+class Box<T>::allocation {
+  static T *alloc() noexcept;
+  static void dealloc(T *) noexcept;
+
+public:
+  allocation() noexcept : ptr(alloc()) {}
+  ~allocation() noexcept {
+    if (this->ptr) {
+      dealloc(this->ptr);
+    }
+  }
   T *ptr;
 };
 
@@ -117,14 +139,18 @@ Box<T>::Box(Box &&other) noexcept : ptr(other.ptr) {
 
 template <typename T>
 Box<T>::Box(const T &val) {
-  this->uninit();
-  ::new (this->ptr) T(val);
+  allocation alloc;
+  ::new (alloc.ptr) T(val);
+  this->ptr = alloc.ptr;
+  alloc.ptr = nullptr;
 }
 
 template <typename T>
 Box<T>::Box(T &&val) {
-  this->uninit();
-  ::new (this->ptr) T(std::move(val));
+  allocation alloc;
+  ::new (alloc.ptr) T(std::move(val));
+  this->ptr = alloc.ptr;
+  alloc.ptr = nullptr;
 }
 
 template <typename T>
@@ -136,13 +162,13 @@ Box<T>::~Box() noexcept {
 
 template <typename T>
 Box<T> &Box<T>::operator=(const Box &other) {
-  if (this != &other) {
-    if (this->ptr) {
-      **this = *other;
-    } else {
-      this->uninit();
-      ::new (this->ptr) T(*other);
-    }
+  if (this->ptr) {
+    **this = *other;
+  } else {
+    allocation alloc;
+    ::new (alloc.ptr) T(*other);
+    this->ptr = alloc.ptr;
+    alloc.ptr = nullptr;
   }
   return *this;
 }
@@ -180,15 +206,16 @@ T &Box<T>::operator*() noexcept {
 template <typename T>
 template <typename... Fields>
 Box<T> Box<T>::in_place(Fields &&... fields) {
-  Box box;
-  box.uninit();
-  ::new (box.ptr) T{std::forward<Fields>(fields)...};
-  return box;
+  allocation alloc;
+  auto ptr = alloc.ptr;
+  ::new (ptr) T{std::forward<Fields>(fields)...};
+  alloc.ptr = nullptr;
+  return from_raw(ptr);
 }
 
 template <typename T>
 Box<T> Box<T>::from_raw(T *raw) noexcept {
-  Box box;
+  Box box = uninit{};
   box.ptr = raw;
   return box;
 }
@@ -201,7 +228,7 @@ T *Box<T>::into_raw() noexcept {
 }
 
 template <typename T>
-Box<T>::Box() noexcept = default;
+Box<T>::Box(uninit) noexcept {}
 #endif // CXXBRIDGE1_RUST_BOX
 
 #ifndef CXXBRIDGE1_RUST_OPAQUE
@@ -213,6 +240,74 @@ public:
   ~Opaque() = delete;
 };
 #endif // CXXBRIDGE1_RUST_OPAQUE
+
+#ifndef CXXBRIDGE1_IS_COMPLETE
+#define CXXBRIDGE1_IS_COMPLETE
+namespace detail {
+namespace {
+template <typename T, typename = std::size_t>
+struct is_complete : std::false_type {};
+template <typename T>
+struct is_complete<T, decltype(sizeof(T))> : std::true_type {};
+} // namespace
+} // namespace detail
+#endif // CXXBRIDGE1_IS_COMPLETE
+
+#ifndef CXXBRIDGE1_LAYOUT
+#define CXXBRIDGE1_LAYOUT
+class layout {
+  template <typename T>
+  friend std::size_t size_of();
+  template <typename T>
+  friend std::size_t align_of();
+  template <typename T>
+  static typename std::enable_if<std::is_base_of<Opaque, T>::value,
+                                 std::size_t>::type
+  do_size_of() {
+    return T::layout::size();
+  }
+  template <typename T>
+  static typename std::enable_if<!std::is_base_of<Opaque, T>::value,
+                                 std::size_t>::type
+  do_size_of() {
+    return sizeof(T);
+  }
+  template <typename T>
+  static
+      typename std::enable_if<detail::is_complete<T>::value, std::size_t>::type
+      size_of() {
+    return do_size_of<T>();
+  }
+  template <typename T>
+  static typename std::enable_if<std::is_base_of<Opaque, T>::value,
+                                 std::size_t>::type
+  do_align_of() {
+    return T::layout::align();
+  }
+  template <typename T>
+  static typename std::enable_if<!std::is_base_of<Opaque, T>::value,
+                                 std::size_t>::type
+  do_align_of() {
+    return alignof(T);
+  }
+  template <typename T>
+  static
+      typename std::enable_if<detail::is_complete<T>::value, std::size_t>::type
+      align_of() {
+    return do_align_of<T>();
+  }
+};
+
+template <typename T>
+std::size_t size_of() {
+  return layout::size_of<T>();
+}
+
+template <typename T>
+std::size_t align_of() {
+  return layout::align_of<T>();
+}
+#endif // CXXBRIDGE1_LAYOUT
 } // namespace cxxbridge1
 } // namespace rust
 
@@ -228,7 +323,7 @@ namespace mmscenegraph {
 #ifndef CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 #define CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 struct SharedThing final {
-  int32_t z;
+  ::std::int32_t z;
   ::rust::Box<::mmscenegraph::ThingR> y;
   ::std::unique_ptr<::mmscenegraph::ThingC> x;
 
@@ -236,25 +331,51 @@ struct SharedThing final {
 };
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$SharedThing
 
+#ifndef CXXBRIDGE1_STRUCT_mmscenegraph$ThingR
+#define CXXBRIDGE1_STRUCT_mmscenegraph$ThingR
+struct ThingR final : public ::rust::Opaque {
+private:
+  friend ::rust::layout;
+  struct layout {
+    static ::std::size_t size() noexcept;
+    static ::std::size_t align() noexcept;
+  };
+};
+#endif // CXXBRIDGE1_STRUCT_mmscenegraph$ThingR
+
 #ifndef CXXBRIDGE1_STRUCT_mmscenegraph$ReadOperation
 #define CXXBRIDGE1_STRUCT_mmscenegraph$ReadOperation
 struct ReadOperation final : public ::rust::Opaque {
-  uint8_t get_id() const noexcept;
-  size_t get_num() const noexcept;
+  ::std::uint8_t get_id() const noexcept;
+  ::std::size_t get_num() const noexcept;
+
+private:
+  friend ::rust::layout;
+  struct layout {
+    static ::std::size_t size() noexcept;
+    static ::std::size_t align() noexcept;
+  };
 };
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$ReadOperation
 
 #ifndef CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
 #define CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
 struct WriteOperation final : public ::rust::Opaque {
-  uint8_t get_id() const noexcept;
-  size_t get_num() const noexcept;
+  ::std::uint8_t get_id() const noexcept;
+  ::std::size_t get_num() const noexcept;
+
+private:
+  friend ::rust::layout;
+  struct layout {
+    static ::std::size_t size() noexcept;
+    static ::std::size_t align() noexcept;
+  };
 };
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
 
 void print_r(const ::mmscenegraph::ThingR &r) noexcept;
 
-::rust::Box<::mmscenegraph::ReadOperation> new_read_operation(uint8_t id, size_t num) noexcept;
+::rust::Box<::mmscenegraph::ReadOperation> new_read_operation(::std::uint8_t id, ::std::size_t num) noexcept;
 
-::rust::Box<::mmscenegraph::WriteOperation> new_write_operation(uint8_t id, size_t num) noexcept;
+::rust::Box<::mmscenegraph::WriteOperation> new_write_operation(::std::uint8_t id, ::std::size_t num) noexcept;
 } // namespace mmscenegraph
