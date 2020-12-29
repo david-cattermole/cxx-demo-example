@@ -1,30 +1,32 @@
 $ ./build_linux.bash
-thread 'main' panicked at 'Unable to find mmscenegraph for "/media/share/Users/catte/dev/cxx-demo-example/Cargo.toml"', /home/davidc/.cargo/registry/src/github.com-1ecc6299db9ec823/cbindgen-0.14.3/src/bindgen/cargo/cargo.rs:89:21
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+./build_linux.bash
    Compiling cc v1.0.62
    Compiling proc-macro2 v1.0.24
    Compiling unicode-xid v0.2.1
    Compiling syn v1.0.54
-   Compiling cxxbridge-flags v1.0.11
+   Compiling cxxbridge-flags v1.0.23 (https://github.com/david-cattermole/cxx.git?rev=363c18b2982329d6e4fbc2a6e5f324f4fef03661#363c18b2)
+   Compiling cxxbridge-macro v1.0.23 (https://github.com/david-cattermole/cxx.git?rev=363c18b2982329d6e4fbc2a6e5f324f4fef03661#363c18b2)
    Compiling libc v0.2.80
    Compiling link-cplusplus v1.0.4
-   Compiling cxx v1.0.11
+   Compiling cxx v1.0.23 (https://github.com/david-cattermole/cxx.git?rev=363c18b2982329d6e4fbc2a6e5f324f4fef03661#363c18b2)
    Compiling quote v1.0.7
-   Compiling cxxbridge-macro v1.0.11
    Compiling mmscenegraph-rs v0.1.0 (/media/share/Users/catte/dev/cxx-demo-example)
-    Finished release [optimized] target(s) in 17.90s
+    Finished release [optimized] target(s) in 18.52s
 -- The C compiler identification is GNU 6.3.1
 -- The CXX compiler identification is GNU 6.3.1
 -- Check for working C compiler: /opt/rh/devtoolset-6/root/usr/bin/gcc
--- Check for working C compiler: /opt/rh/devtoolset-6/root/usr/bin/gcc -- works
+-- Check for working C compiler: /opt/rh/devtoolset-6/root/usr/bin/gcc - works
 -- Detecting C compiler ABI info
 -- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
 -- Check for working CXX compiler: /opt/rh/devtoolset-6/root/usr/bin/g++
--- Check for working CXX compiler: /opt/rh/devtoolset-6/root/usr/bin/g++ -- works
+-- Check for working CXX compiler: /opt/rh/devtoolset-6/root/usr/bin/g++ - works
 -- Detecting CXX compiler ABI info
 -- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
 -- Finding: libmmscenegraph_rs.a
-DEBUGRUST BUILD DIR: /media/dev/cxx-demo-example/target/release
 -- Rust Library: /media/dev/cxx-demo-example/target/release/libmmscenegraph_rs.a
 -- Using cxxbridge: /home/davidc/.cargo/bin/cxxbridge
 -- Configuring done
@@ -34,17 +36,15 @@ DEBUGRUST BUILD DIR: /media/dev/cxx-demo-example/target/release
 Scanning dependencies of target mmscenegraph
 [ 25%] Building CXX object src/CMakeFiles/mmscenegraph.dir/lib.cpp.o
 [ 37%] Building CXX object src/CMakeFiles/mmscenegraph.dir/_cxxbridge.cpp.o
-Linking CXX shared library libmmscenegraph.so
-[ 37%] Built target mmscenegraph
+[ 50%] Linking CXX shared library libmmscenegraph.so
+[ 50%] Built target mmscenegraph
 Scanning dependencies of target mmscenegraph_tests
-[ 50%] Building CXX object tests/CMakeFiles/mmscenegraph_tests.dir/main.cpp.o
-[ 62%] Building CXX object tests/CMakeFiles/mmscenegraph_tests.dir/test_a.cpp.o
-[ 75%] Building CXX object tests/CMakeFiles/mmscenegraph_tests.dir/test_b.cpp.o
-[ 87%] Building CXX object tests/CMakeFiles/mmscenegraph_tests.dir/__/src/_cxxbridge.cpp.o
-[100%] Building CXX object tests/CMakeFiles/mmscenegraph_tests.dir/__/src/lib.cpp.o
-Linking CXX executable mmscenegraph_tests
+[ 62%] Building CXX object tests/CMakeFiles/mmscenegraph_tests.dir/main.cpp.o
+[ 75%] Building CXX object tests/CMakeFiles/mmscenegraph_tests.dir/test_a.cpp.o
+[ 87%] Building CXX object tests/CMakeFiles/mmscenegraph_tests.dir/test_b.cpp.o
+[100%] Linking CXX executable mmscenegraph_tests
 [100%] Built target mmscenegraph_tests
-[ 37%] Built target mmscenegraph
+[ 50%] Built target mmscenegraph
 [100%] Built target mmscenegraph_tests
 Install the project...
 -- Install configuration: "Release"
@@ -56,7 +56,7 @@ $ ./install/bin/mmscenegraph_tests
 2 + 2 = 4
 ---- Start Test A...
 SCENEGRAPH: Add SceneGraph 42
-SCENEGRAPH: Remove SceneGraph 0x1421490
+SCENEGRAPH: Remove SceneGraph 0x157b490
 ---- Finished Test A!
 ---- Start Test B...
 my awesome demo
@@ -75,4 +75,4 @@ done with ThingC
 ---- Finished Testing!
 
 $ cxxbridge --version
-cxxbridge 1.0.11
+cxxbridge 1.0.23
