@@ -18,11 +18,7 @@ message(STATUS "Using cxxbridge: ${CXXBRIDGE}")
 set(cxxbridge_in ${CMAKE_SOURCE_DIR}/src/cxxbridge.rs)
 set(cxxbridge_source_out ${CMAKE_SOURCE_DIR}/src/_cxxbridge.cpp)
 set(cxxbridge_header_out ${CMAKE_SOURCE_DIR}/include/mmscenegraph/_cxxbridge.h)
-if (MSVC)
-  set(cxxbridge_args "--cxx-impl-annotations \"__declspec(dllexport)\"")
-elseif (UNIX) # GCC
-  set(cxxbridge_args "--cxx-impl-annotations" "\"__attribute__((visibility(\\\"default\\\")))\"")
-endif()
+  set(cxxbridge_args "--cxx-impl-annotations" "MMSCENEGRAPH_SYMBOL_EXPORT")
 add_custom_command(
   OUTPUT ${cxxbridge_source_out} ${cxxbridge_header_out}
   COMMAND ${CXXBRIDGE} ${cxxbridge_in} ${cxxbridge_args} --header --output ${cxxbridge_header_out}
@@ -40,6 +36,8 @@ target_include_directories(${target_lib}
   PUBLIC ${CMAKE_SOURCE_DIR}/include
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ )
 target_include_directories(${target_lib} PUBLIC ${RUST_INCLUDE_DIR})
+set_target_properties(${target_lib}
+  PROPERTIES CXX_VISIBILITY_PRESET hidden)
 if (MSVC)
   target_link_libraries(${target_lib} ws2_32 userenv advapi32 shell32)
   if (CMAKE_BUILD_TYPE STREQUAL "Release")

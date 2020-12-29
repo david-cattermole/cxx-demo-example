@@ -9,12 +9,7 @@ include(CxxDemoExampleUtils)
 add_executable(${target_test_exe}
   main.cpp
   test_a.cpp
-  test_b.cpp
-
-  # The generated C++ files are also needed, otherwise symbols will be
-  # missing in the executable.
-  ${CMAKE_SOURCE_DIR}/src/_cxxbridge.cpp
-  ${CMAKE_SOURCE_DIR}/src/lib.cpp)
+  test_b.cpp)
 target_link_libraries(${target_test_exe} ${target_lib})
 target_include_directories(${target_test_exe}
   PUBLIC ${CMAKE_SOURCE_DIR}/include

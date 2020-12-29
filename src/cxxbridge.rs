@@ -7,8 +7,9 @@ mod ffi {
     }
 
     unsafe extern "C++" {
+        include!("mmscenegraph/symbol_export.h");
         include!("mmscenegraph/_cpp.h");
-        include!("mmscenegraph.h");
+        include!(<mmscenegraph.h>);
 
         type ThingC;
         fn make_demo(appname: &str) -> UniquePtr<ThingC>;

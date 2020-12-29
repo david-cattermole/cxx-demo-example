@@ -1,6 +1,7 @@
 #pragma once
+#include "mmscenegraph/symbol_export.h"
 #include "mmscenegraph/_cpp.h"
-#include "mmscenegraph.h"
+#include <mmscenegraph.h>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -346,8 +347,8 @@ private:
 #ifndef CXXBRIDGE1_STRUCT_mmscenegraph$ReadOperation
 #define CXXBRIDGE1_STRUCT_mmscenegraph$ReadOperation
 struct ReadOperation final : public ::rust::Opaque {
-  ::std::uint8_t get_id() const noexcept;
-  ::std::size_t get_num() const noexcept;
+  MMSCENEGRAPH_SYMBOL_EXPORT ::std::uint8_t get_id() const noexcept;
+  MMSCENEGRAPH_SYMBOL_EXPORT ::std::size_t get_num() const noexcept;
 
 private:
   friend ::rust::layout;
@@ -361,8 +362,8 @@ private:
 #ifndef CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
 #define CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
 struct WriteOperation final : public ::rust::Opaque {
-  ::std::uint8_t get_id() const noexcept;
-  ::std::size_t get_num() const noexcept;
+  MMSCENEGRAPH_SYMBOL_EXPORT ::std::uint8_t get_id() const noexcept;
+  MMSCENEGRAPH_SYMBOL_EXPORT ::std::size_t get_num() const noexcept;
 
 private:
   friend ::rust::layout;
@@ -373,9 +374,9 @@ private:
 };
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
 
-void print_r(const ::mmscenegraph::ThingR &r) noexcept;
+MMSCENEGRAPH_SYMBOL_EXPORT void print_r(const ::mmscenegraph::ThingR &r) noexcept;
 
-::rust::Box<::mmscenegraph::ReadOperation> new_read_operation(::std::uint8_t id, ::std::size_t num) noexcept;
+MMSCENEGRAPH_SYMBOL_EXPORT ::rust::Box<::mmscenegraph::ReadOperation> new_read_operation(::std::uint8_t id, ::std::size_t num) noexcept;
 
-::rust::Box<::mmscenegraph::WriteOperation> new_write_operation(::std::uint8_t id, ::std::size_t num) noexcept;
+MMSCENEGRAPH_SYMBOL_EXPORT ::rust::Box<::mmscenegraph::WriteOperation> new_write_operation(::std::uint8_t id, ::std::size_t num) noexcept;
 } // namespace mmscenegraph
