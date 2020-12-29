@@ -21,7 +21,7 @@ RUST_INCLUDE_DIR="${ROOT}/include/"
 # Assumes 'cxxbridge-cmd' and 'cbindgen' is installed.
 cxxbridge --header --output "${ROOT}/include/cxx.h"
 cbindgen --config cbindgen.toml \
-         --crate mmscenegraph \
+         --crate "mmscenegraph-rs" \
          --output "${ROOT}/include/mmscenegraph/_cbindgen.h"
 cargo build --release
 
