@@ -50,9 +50,9 @@ namespace = "mmscenegraph"
 # # default: []
 # sys_includes = ["stdio", "string"]
 
-# # A list of headers to #include (with quotes)
-# # default: []
-# includes = ["my_great_lib.h"]
+# A list of headers to #include (with quotes)
+# default: []
+includes = ["symbol_export.h"]
 
 # # Whether cbindgen's default C/C++ standard imports should be suppressed. These
 # # imports are included by default because our generated headers tend to require
