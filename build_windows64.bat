@@ -15,11 +15,9 @@ SET INSTALL_DIR="%ROOT%\install"
 SET RUST_BUILD_DIR="%ROOT%\target\release"
 SET RUST_INCLUDE_DIR="%ROOT%\include"
 
-:: Force cxxbridge.exe command to be installed with the exact version
-::we need.
-::
-:: NOTE: This will *replace& the existing cxxbridge.exe command.
-cargo install cxxbridge-cmd --force --git "https://github.com/david-cattermole/cxx.git" --rev "d58c650847d1f734d1c09a4e87d50f5904f2c4f5"
+:: Install the needed cxxbridge.exe command to be installed with the
+:: exact version we need.
+cargo install cxxbridge-cmd --git "https://github.com/david-cattermole/cxx.git" --rev "363c18b2982329d6e4fbc2a6e5f324f4fef03661"
 
 :: Build Rust
 ::

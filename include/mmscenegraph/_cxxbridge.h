@@ -57,8 +57,16 @@ public:
   bool operator>=(const Str &) const noexcept;
 
 private:
-  std::array<std::uintptr_t, 2> repr;
+  friend impl<Str>;
+  const char *ptr;
+  std::size_t len;
 };
+
+inline const char *Str::data() const noexcept { return this->ptr; }
+
+inline std::size_t Str::size() const noexcept { return this->len; }
+
+inline std::size_t Str::length() const noexcept { return this->len; }
 #endif // CXXBRIDGE1_RUST_STR
 
 #ifndef CXXBRIDGE1_RUST_BOX
@@ -72,12 +80,14 @@ public:
   using pointer = typename std::add_pointer<T>::type;
 
   Box() = delete;
+  Box(const Box &);
   Box(Box &&) noexcept;
   ~Box() noexcept;
 
   explicit Box(const T &);
   explicit Box(T &&);
 
+  Box &operator=(const Box &);
   Box &operator=(Box &&) noexcept;
 
   const T *operator->() const noexcept;
@@ -87,8 +97,6 @@ public:
 
   template <typename... Fields>
   static Box in_place(Fields &&...);
-
-  void swap(Box &) noexcept;
 
   static Box from_raw(T *) noexcept;
 
@@ -101,9 +109,6 @@ private:
   class allocation;
   Box(uninit) noexcept;
   void drop() noexcept;
-
-  friend void swap(Box &lhs, Box &rhs) noexcept { lhs.swap(rhs); }
-
   T *ptr;
 };
 
@@ -124,6 +129,9 @@ public:
   }
   T *ptr;
 };
+
+template <typename T>
+Box<T>::Box(const Box &other) : Box(*other) {}
 
 template <typename T>
 Box<T>::Box(Box &&other) noexcept : ptr(other.ptr) {
@@ -151,6 +159,19 @@ Box<T>::~Box() noexcept {
   if (this->ptr) {
     this->drop();
   }
+}
+
+template <typename T>
+Box<T> &Box<T>::operator=(const Box &other) {
+  if (this->ptr) {
+    **this = *other;
+  } else {
+    allocation alloc;
+    ::new (alloc.ptr) T(*other);
+    this->ptr = alloc.ptr;
+    alloc.ptr = nullptr;
+  }
+  return *this;
 }
 
 template <typename T>
@@ -191,12 +212,6 @@ Box<T> Box<T>::in_place(Fields &&... fields) {
   ::new (ptr) T{std::forward<Fields>(fields)...};
   alloc.ptr = nullptr;
   return from_raw(ptr);
-}
-
-template <typename T>
-void Box<T>::swap(Box &rhs) noexcept {
-  using std::swap;
-  swap(this->ptr, rhs.ptr);
 }
 
 template <typename T>

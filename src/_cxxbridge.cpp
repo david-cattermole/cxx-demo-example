@@ -56,8 +56,16 @@ public:
   bool operator>=(const Str &) const noexcept;
 
 private:
-  std::array<std::uintptr_t, 2> repr;
+  friend impl<Str>;
+  const char *ptr;
+  std::size_t len;
 };
+
+inline const char *Str::data() const noexcept { return this->ptr; }
+
+inline std::size_t Str::size() const noexcept { return this->len; }
+
+inline std::size_t Str::length() const noexcept { return this->len; }
 #endif // CXXBRIDGE1_RUST_STR
 
 #ifndef CXXBRIDGE1_RUST_BOX
@@ -71,12 +79,14 @@ public:
   using pointer = typename std::add_pointer<T>::type;
 
   Box() = delete;
+  Box(const Box &);
   Box(Box &&) noexcept;
   ~Box() noexcept;
 
   explicit Box(const T &);
   explicit Box(T &&);
 
+  Box &operator=(const Box &);
   Box &operator=(Box &&) noexcept;
 
   const T *operator->() const noexcept;
@@ -86,8 +96,6 @@ public:
 
   template <typename... Fields>
   static Box in_place(Fields &&...);
-
-  void swap(Box &) noexcept;
 
   static Box from_raw(T *) noexcept;
 
@@ -100,9 +108,6 @@ private:
   class allocation;
   Box(uninit) noexcept;
   void drop() noexcept;
-
-  friend void swap(Box &lhs, Box &rhs) noexcept { lhs.swap(rhs); }
-
   T *ptr;
 };
 
@@ -123,6 +128,9 @@ public:
   }
   T *ptr;
 };
+
+template <typename T>
+Box<T>::Box(const Box &other) : Box(*other) {}
 
 template <typename T>
 Box<T>::Box(Box &&other) noexcept : ptr(other.ptr) {
@@ -150,6 +158,19 @@ Box<T>::~Box() noexcept {
   if (this->ptr) {
     this->drop();
   }
+}
+
+template <typename T>
+Box<T> &Box<T>::operator=(const Box &other) {
+  if (this->ptr) {
+    **this = *other;
+  } else {
+    allocation alloc;
+    ::new (alloc.ptr) T(*other);
+    this->ptr = alloc.ptr;
+    alloc.ptr = nullptr;
+  }
+  return *this;
 }
 
 template <typename T>
@@ -190,12 +211,6 @@ Box<T> Box<T>::in_place(Fields &&... fields) {
   ::new (ptr) T{std::forward<Fields>(fields)...};
   alloc.ptr = nullptr;
   return from_raw(ptr);
-}
-
-template <typename T>
-void Box<T>::swap(Box &rhs) noexcept {
-  using std::swap;
-  swap(this->ptr, rhs.ptr);
 }
 
 template <typename T>
@@ -295,6 +310,24 @@ std::size_t align_of() {
 #endif // CXXBRIDGE1_LAYOUT
 
 namespace {
+namespace repr {
+struct PtrLen final {
+  void *ptr;
+  ::std::size_t len;
+};
+} // namespace repr
+
+template <>
+class impl<Str> final {
+public:
+  static Str new_unchecked(repr::PtrLen repr) noexcept {
+    Str str;
+    str.ptr = static_cast<const char *>(repr.ptr);
+    str.len = repr.len;
+    return str;
+  }
+};
+
 template <bool> struct deleter_if {
   template <typename T> void operator()(T *) {}
 };
@@ -369,9 +402,9 @@ private:
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
 
 extern "C" {
-MMSCENEGRAPH_SYMBOL_EXPORT ::mmscenegraph::ThingC *mmscenegraph$cxxbridge1$make_demo(::rust::Str appname) noexcept {
+MMSCENEGRAPH_SYMBOL_EXPORT ::mmscenegraph::ThingC *mmscenegraph$cxxbridge1$make_demo(::rust::repr::PtrLen appname) noexcept {
   ::std::unique_ptr<::mmscenegraph::ThingC> (*make_demo$)(::rust::Str) = ::mmscenegraph::make_demo;
-  return make_demo$(appname).release();
+  return make_demo$(::rust::impl<::rust::Str>::new_unchecked(appname)).release();
 }
 
 MMSCENEGRAPH_SYMBOL_EXPORT const ::std::string *mmscenegraph$cxxbridge1$get_name(const ::mmscenegraph::ThingC &thing) noexcept {
