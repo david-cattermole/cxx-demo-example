@@ -74,9 +74,9 @@ This demo targets the C++11 standard.
   - CMake 2.8.12+
   - Rust 1.48
     - cbindgen
-    - cxx 1.0.1
+    - cxx 1.0.26
     - libc
-  - cxxbridge-cmd 1.0.1 (installed via Rust's Cargo package manager)
+  - cxxbridge-cmd 1.0.26 (installed via Rust's Cargo package manager)
 
 # Project Anatomy
 
