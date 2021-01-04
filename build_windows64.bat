@@ -17,7 +17,7 @@ SET RUST_INCLUDE_DIR="%ROOT%\include"
 
 :: Install the needed cxxbridge.exe command to be installed with the
 :: exact version we need.
-cargo install cxxbridge-cmd --git "https://github.com/david-cattermole/cxx.git" --rev "363c18b2982329d6e4fbc2a6e5f324f4fef03661"
+cargo install cxxbridge-cmd --version 1.0.26
 
 :: Build Rust
 ::

@@ -9,7 +9,7 @@ mod ffi {
     unsafe extern "C++" {
         include!("mmscenegraph/symbol_export.h");
         include!("mmscenegraph/_cpp.h");
-        include!(<mmscenegraph.h>);
+        include!("mmscenegraph.h");
 
         type ThingC;
         fn make_demo(appname: &str) -> UniquePtr<ThingC>;
@@ -31,6 +31,12 @@ mod ffi {
         fn get_num(self: &WriteOperation) -> usize;
         fn new_write_operation(id: u8, num: usize) -> Box<WriteOperation>;
     }
+
+    #[namespace = "mmscenegraph::geom"]
+    extern "Rust" {
+        fn read(buffer: &mut [u32]) -> bool;
+        fn write(buffer: &[u32]) -> bool;
+    }
 }
 
 pub struct ThingR(usize);
@@ -38,6 +44,21 @@ pub struct ThingR(usize);
 pub struct ReadOperation {
     id: u8,
     num: usize,
+}
+
+fn read(buffer: &mut [u32]) -> bool {
+    for i in 0..buffer.len() {
+        println!("read buffer i={}", i);
+        buffer[i] = i as u32;
+    }
+    true
+}
+
+fn write(buffer: &[u32]) -> bool {
+    for i in 0..buffer.len() {
+        println!("write buffer i={} value={}", i, buffer[i]);
+    }
+    true
 }
 
 fn new_read_operation(id: u8, num: usize) -> Box<ReadOperation> {

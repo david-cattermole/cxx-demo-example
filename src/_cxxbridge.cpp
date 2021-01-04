@@ -1,8 +1,9 @@
 #include "mmscenegraph/symbol_export.h"
 #include "mmscenegraph/_cpp.h"
-#include <mmscenegraph.h>
+#include "mmscenegraph.h"
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <memory>
 #include <new>
 #include <string>
@@ -13,12 +14,23 @@ namespace rust {
 inline namespace cxxbridge1 {
 // #include "rust/cxx.h"
 
+#ifndef CXXBRIDGE1_PANIC
+#define CXXBRIDGE1_PANIC
+template <typename Exception>
+void panic [[noreturn]] (const char *msg);
+#endif // CXXBRIDGE1_PANIC
+
 namespace {
 template <typename T>
 class impl;
 } // namespace
 
 class String;
+
+template <typename T>
+::std::size_t size_of();
+template <typename T>
+::std::size_t align_of();
 
 #ifndef CXXBRIDGE1_RUST_STR
 #define CXXBRIDGE1_RUST_STR
@@ -55,18 +67,301 @@ public:
   bool operator>(const Str &) const noexcept;
   bool operator>=(const Str &) const noexcept;
 
+  void swap(Str &) noexcept;
+
 private:
+  class uninit;
+  Str(uninit) noexcept;
   friend impl<Str>;
-  const char *ptr;
-  std::size_t len;
+
+  std::array<std::uintptr_t, 2> repr;
+};
+#endif // CXXBRIDGE1_RUST_STR
+
+#ifndef CXXBRIDGE1_RUST_SLICE
+#define CXXBRIDGE1_RUST_SLICE
+namespace detail {
+template <bool>
+struct copy_assignable_if {};
+
+template <>
+struct copy_assignable_if<false> {
+  copy_assignable_if() noexcept = default;
+  copy_assignable_if(const copy_assignable_if &) noexcept = default;
+  copy_assignable_if &operator=(const copy_assignable_if &) noexcept = delete;
+  copy_assignable_if &operator=(copy_assignable_if &&) noexcept = default;
+};
+} // namespace detail
+
+template <typename T>
+class Slice final
+    : private detail::copy_assignable_if<std::is_const<T>::value> {
+public:
+  using value_type = T;
+
+  Slice() noexcept;
+  Slice(T *, std::size_t count) noexcept;
+
+  Slice &operator=(const Slice<T> &) noexcept = default;
+  Slice &operator=(Slice<T> &&) noexcept = default;
+
+  T *data() const noexcept;
+  std::size_t size() const noexcept;
+  std::size_t length() const noexcept;
+  bool empty() const noexcept;
+
+  T &operator[](std::size_t n) const noexcept;
+  T &at(std::size_t n) const;
+  T &front() const noexcept;
+  T &back() const noexcept;
+
+  Slice(const Slice<T> &) noexcept = default;
+  ~Slice() noexcept = default;
+
+  class iterator;
+  iterator begin() const noexcept;
+  iterator end() const noexcept;
+
+  void swap(Slice &) noexcept;
+
+private:
+  class uninit;
+  Slice(uninit) noexcept;
+  friend impl<Slice>;
+  friend void sliceInit(void *, const void *, std::size_t) noexcept;
+  friend void *slicePtr(const void *) noexcept;
+  friend std::size_t sliceLen(const void *) noexcept;
+
+  std::array<std::uintptr_t, 2> repr;
 };
 
-inline const char *Str::data() const noexcept { return this->ptr; }
+template <typename T>
+class Slice<T>::iterator final {
+public:
+  using iterator_category = std::random_access_iterator_tag;
+  using value_type = T;
+  using difference_type = std::ptrdiff_t;
+  using pointer = typename std::add_pointer<T>::type;
+  using reference = typename std::add_lvalue_reference<T>::type;
 
-inline std::size_t Str::size() const noexcept { return this->len; }
+  reference operator*() const noexcept;
+  pointer operator->() const noexcept;
+  reference operator[](difference_type) const noexcept;
 
-inline std::size_t Str::length() const noexcept { return this->len; }
-#endif // CXXBRIDGE1_RUST_STR
+  iterator &operator++() noexcept;
+  iterator operator++(int) noexcept;
+  iterator &operator--() noexcept;
+  iterator operator--(int) noexcept;
+
+  iterator &operator+=(difference_type) noexcept;
+  iterator &operator-=(difference_type) noexcept;
+  iterator operator+(difference_type) const noexcept;
+  iterator operator-(difference_type) const noexcept;
+  difference_type operator-(const iterator &) const noexcept;
+
+  bool operator==(const iterator &) const noexcept;
+  bool operator!=(const iterator &) const noexcept;
+  bool operator<(const iterator &) const noexcept;
+  bool operator<=(const iterator &) const noexcept;
+  bool operator>(const iterator &) const noexcept;
+  bool operator>=(const iterator &) const noexcept;
+
+private:
+  friend class Slice;
+  void *pos;
+  std::size_t stride;
+};
+
+template <typename T>
+Slice<T>::Slice() noexcept {
+  sliceInit(this, reinterpret_cast<void *>(align_of<T>()), 0);
+}
+
+template <typename T>
+Slice<T>::Slice(T *s, std::size_t count) noexcept {
+  sliceInit(this, const_cast<typename std::remove_const<T>::type *>(s), count);
+}
+
+template <typename T>
+T *Slice<T>::data() const noexcept {
+  return reinterpret_cast<T *>(slicePtr(this));
+}
+
+template <typename T>
+std::size_t Slice<T>::size() const noexcept {
+  return sliceLen(this);
+}
+
+template <typename T>
+std::size_t Slice<T>::length() const noexcept {
+  return this->size();
+}
+
+template <typename T>
+bool Slice<T>::empty() const noexcept {
+  return this->size() == 0;
+}
+
+template <typename T>
+T &Slice<T>::operator[](std::size_t n) const noexcept {
+  assert(n < this->size());
+  auto pos = static_cast<char *>(slicePtr(this)) + size_of<T>() * n;
+  return *reinterpret_cast<T *>(pos);
+}
+
+template <typename T>
+T &Slice<T>::at(std::size_t n) const {
+  if (n >= this->size()) {
+    panic<std::out_of_range>("rust::Slice index out of range");
+  }
+  return (*this)[n];
+}
+
+template <typename T>
+T &Slice<T>::front() const noexcept {
+  assert(!this->empty());
+  return (*this)[0];
+}
+
+template <typename T>
+T &Slice<T>::back() const noexcept {
+  assert(!this->empty());
+  return (*this)[this->size() - 1];
+}
+
+template <typename T>
+typename Slice<T>::iterator::reference
+Slice<T>::iterator::operator*() const noexcept {
+  return *static_cast<T *>(this->pos);
+}
+
+template <typename T>
+typename Slice<T>::iterator::pointer
+Slice<T>::iterator::operator->() const noexcept {
+  return static_cast<T *>(this->pos);
+}
+
+template <typename T>
+typename Slice<T>::iterator::reference Slice<T>::iterator::operator[](
+    typename Slice<T>::iterator::difference_type n) const noexcept {
+  auto pos = static_cast<char *>(this->pos) + this->stride * n;
+  return *reinterpret_cast<T *>(pos);
+}
+
+template <typename T>
+typename Slice<T>::iterator &Slice<T>::iterator::operator++() noexcept {
+  this->pos = static_cast<char *>(this->pos) + this->stride;
+  return *this;
+}
+
+template <typename T>
+typename Slice<T>::iterator Slice<T>::iterator::operator++(int) noexcept {
+  auto ret = iterator(*this);
+  this->pos = static_cast<char *>(this->pos) + this->stride;
+  return ret;
+}
+
+template <typename T>
+typename Slice<T>::iterator &Slice<T>::iterator::operator--() noexcept {
+  this->pos = static_cast<char *>(this->pos) - this->stride;
+  return *this;
+}
+
+template <typename T>
+typename Slice<T>::iterator Slice<T>::iterator::operator--(int) noexcept {
+  auto ret = iterator(*this);
+  this->pos = static_cast<char *>(this->pos) - this->stride;
+  return ret;
+}
+
+template <typename T>
+typename Slice<T>::iterator &Slice<T>::iterator::operator+=(
+    typename Slice<T>::iterator::difference_type n) noexcept {
+  this->pos = static_cast<char *>(this->pos) + this->stride * n;
+  return *this;
+}
+
+template <typename T>
+typename Slice<T>::iterator &Slice<T>::iterator::operator-=(
+    typename Slice<T>::iterator::difference_type n) noexcept {
+  this->pos = static_cast<char *>(this->pos) - this->stride * n;
+  return *this;
+}
+
+template <typename T>
+typename Slice<T>::iterator Slice<T>::iterator::operator+(
+    typename Slice<T>::iterator::difference_type n) const noexcept {
+  auto ret = iterator(*this);
+  ret.pos = static_cast<char *>(this->pos) + this->stride * n;
+  return ret;
+}
+
+template <typename T>
+typename Slice<T>::iterator Slice<T>::iterator::operator-(
+    typename Slice<T>::iterator::difference_type n) const noexcept {
+  auto ret = iterator(*this);
+  ret.pos = static_cast<char *>(this->pos) - this->stride * n;
+  return ret;
+}
+
+template <typename T>
+typename Slice<T>::iterator::difference_type
+Slice<T>::iterator::operator-(const iterator &other) const noexcept {
+  auto diff = std::distance(static_cast<char *>(other.pos),
+                            static_cast<char *>(this->pos));
+  return diff / this->stride;
+}
+
+template <typename T>
+bool Slice<T>::iterator::operator==(const iterator &other) const noexcept {
+  return this->pos == other.pos;
+}
+
+template <typename T>
+bool Slice<T>::iterator::operator!=(const iterator &other) const noexcept {
+  return this->pos != other.pos;
+}
+
+template <typename T>
+bool Slice<T>::iterator::operator<(const iterator &other) const noexcept {
+  return this->pos < other.pos;
+}
+
+template <typename T>
+bool Slice<T>::iterator::operator<=(const iterator &other) const noexcept {
+  return this->pos <= other.pos;
+}
+
+template <typename T>
+bool Slice<T>::iterator::operator>(const iterator &other) const noexcept {
+  return this->pos > other.pos;
+}
+
+template <typename T>
+bool Slice<T>::iterator::operator>=(const iterator &other) const noexcept {
+  return this->pos >= other.pos;
+}
+
+template <typename T>
+typename Slice<T>::iterator Slice<T>::begin() const noexcept {
+  iterator it;
+  it.pos = slicePtr(this);
+  it.stride = size_of<T>();
+  return it;
+}
+
+template <typename T>
+typename Slice<T>::iterator Slice<T>::end() const noexcept {
+  iterator it = this->begin();
+  it.pos = static_cast<char *>(it.pos) + it.stride * this->size();
+  return it;
+}
+
+template <typename T>
+void Slice<T>::swap(Slice &rhs) noexcept {
+  std::swap(*this, rhs);
+}
+#endif // CXXBRIDGE1_RUST_SLICE
 
 #ifndef CXXBRIDGE1_RUST_BOX
 #define CXXBRIDGE1_RUST_BOX
@@ -79,14 +374,12 @@ public:
   using pointer = typename std::add_pointer<T>::type;
 
   Box() = delete;
-  Box(const Box &);
   Box(Box &&) noexcept;
   ~Box() noexcept;
 
   explicit Box(const T &);
   explicit Box(T &&);
 
-  Box &operator=(const Box &);
   Box &operator=(Box &&) noexcept;
 
   const T *operator->() const noexcept;
@@ -96,6 +389,8 @@ public:
 
   template <typename... Fields>
   static Box in_place(Fields &&...);
+
+  void swap(Box &) noexcept;
 
   static Box from_raw(T *) noexcept;
 
@@ -108,6 +403,9 @@ private:
   class allocation;
   Box(uninit) noexcept;
   void drop() noexcept;
+
+  friend void swap(Box &lhs, Box &rhs) noexcept { lhs.swap(rhs); }
+
   T *ptr;
 };
 
@@ -128,9 +426,6 @@ public:
   }
   T *ptr;
 };
-
-template <typename T>
-Box<T>::Box(const Box &other) : Box(*other) {}
 
 template <typename T>
 Box<T>::Box(Box &&other) noexcept : ptr(other.ptr) {
@@ -158,19 +453,6 @@ Box<T>::~Box() noexcept {
   if (this->ptr) {
     this->drop();
   }
-}
-
-template <typename T>
-Box<T> &Box<T>::operator=(const Box &other) {
-  if (this->ptr) {
-    **this = *other;
-  } else {
-    allocation alloc;
-    ::new (alloc.ptr) T(*other);
-    this->ptr = alloc.ptr;
-    alloc.ptr = nullptr;
-  }
-  return *this;
 }
 
 template <typename T>
@@ -211,6 +493,12 @@ Box<T> Box<T>::in_place(Fields &&... fields) {
   ::new (ptr) T{std::forward<Fields>(fields)...};
   alloc.ptr = nullptr;
   return from_raw(ptr);
+}
+
+template <typename T>
+void Box<T>::swap(Box &rhs) noexcept {
+  using std::swap;
+  swap(this->ptr, rhs.ptr);
 }
 
 template <typename T>
@@ -310,24 +598,6 @@ std::size_t align_of() {
 #endif // CXXBRIDGE1_LAYOUT
 
 namespace {
-namespace repr {
-struct PtrLen final {
-  void *ptr;
-  ::std::size_t len;
-};
-} // namespace repr
-
-template <>
-class impl<Str> final {
-public:
-  static Str new_unchecked(repr::PtrLen repr) noexcept {
-    Str str;
-    str.ptr = static_cast<const char *>(repr.ptr);
-    str.len = repr.len;
-    return str;
-  }
-};
-
 template <bool> struct deleter_if {
   template <typename T> void operator()(T *) {}
 };
@@ -362,6 +632,8 @@ struct SharedThing final {
 #ifndef CXXBRIDGE1_STRUCT_mmscenegraph$ThingR
 #define CXXBRIDGE1_STRUCT_mmscenegraph$ThingR
 struct ThingR final : public ::rust::Opaque {
+  ~ThingR() = delete;
+
 private:
   friend ::rust::layout;
   struct layout {
@@ -376,6 +648,7 @@ private:
 struct ReadOperation final : public ::rust::Opaque {
   MMSCENEGRAPH_SYMBOL_EXPORT ::std::uint8_t get_id() const noexcept;
   MMSCENEGRAPH_SYMBOL_EXPORT ::std::size_t get_num() const noexcept;
+  ~ReadOperation() = delete;
 
 private:
   friend ::rust::layout;
@@ -391,6 +664,7 @@ private:
 struct WriteOperation final : public ::rust::Opaque {
   MMSCENEGRAPH_SYMBOL_EXPORT ::std::uint8_t get_id() const noexcept;
   MMSCENEGRAPH_SYMBOL_EXPORT ::std::size_t get_num() const noexcept;
+  ~WriteOperation() = delete;
 
 private:
   friend ::rust::layout;
@@ -402,9 +676,9 @@ private:
 #endif // CXXBRIDGE1_STRUCT_mmscenegraph$WriteOperation
 
 extern "C" {
-MMSCENEGRAPH_SYMBOL_EXPORT ::mmscenegraph::ThingC *mmscenegraph$cxxbridge1$make_demo(::rust::repr::PtrLen appname) noexcept {
+MMSCENEGRAPH_SYMBOL_EXPORT ::mmscenegraph::ThingC *mmscenegraph$cxxbridge1$make_demo(::rust::Str appname) noexcept {
   ::std::unique_ptr<::mmscenegraph::ThingC> (*make_demo$)(::rust::Str) = ::mmscenegraph::make_demo;
-  return make_demo$(::rust::impl<::rust::Str>::new_unchecked(appname)).release();
+  return make_demo$(appname).release();
 }
 
 MMSCENEGRAPH_SYMBOL_EXPORT const ::std::string *mmscenegraph$cxxbridge1$get_name(const ::mmscenegraph::ThingC &thing) noexcept {
@@ -437,6 +711,14 @@ void mmscenegraph$cxxbridge1$print_r(const ::mmscenegraph::ThingR &r) noexcept;
 
 ::mmscenegraph::WriteOperation *mmscenegraph$cxxbridge1$new_write_operation(::std::uint8_t id, ::std::size_t num) noexcept;
 } // extern "C"
+
+namespace geom {
+extern "C" {
+bool mmscenegraph$geom$cxxbridge1$read(::rust::Slice<::std::uint32_t> buffer) noexcept;
+
+bool mmscenegraph$geom$cxxbridge1$write(::rust::Slice<const ::std::uint32_t> buffer) noexcept;
+} // extern "C"
+} // namespace geom
 
 ::std::size_t ThingR::layout::size() noexcept {
   return mmscenegraph$cxxbridge1$ThingR$operator$sizeof();
@@ -489,6 +771,16 @@ MMSCENEGRAPH_SYMBOL_EXPORT ::std::size_t WriteOperation::get_num() const noexcep
 MMSCENEGRAPH_SYMBOL_EXPORT ::rust::Box<::mmscenegraph::WriteOperation> new_write_operation(::std::uint8_t id, ::std::size_t num) noexcept {
   return ::rust::Box<::mmscenegraph::WriteOperation>::from_raw(mmscenegraph$cxxbridge1$new_write_operation(id, num));
 }
+
+namespace geom {
+MMSCENEGRAPH_SYMBOL_EXPORT bool read(::rust::Slice<::std::uint32_t> buffer) noexcept {
+  return mmscenegraph$geom$cxxbridge1$read(buffer);
+}
+
+MMSCENEGRAPH_SYMBOL_EXPORT bool write(::rust::Slice<const ::std::uint32_t> buffer) noexcept {
+  return mmscenegraph$geom$cxxbridge1$write(buffer);
+}
+} // namespace geom
 } // namespace mmscenegraph
 
 extern "C" {
